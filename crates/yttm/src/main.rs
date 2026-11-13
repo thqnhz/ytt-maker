@@ -1,3 +1,4 @@
+use gpui_kit::assets::IconName;
 use gpui_kit::base::resizable_panel;
 use gpui_kit::component::button::*;
 use gpui_kit::component::{ActiveTheme as _, h_resizable, v_resizable};
@@ -51,9 +52,9 @@ impl Render for YttmApp {
 
 impl YttmApp {
     fn render_top_bar(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let toggle_label = match self.workspace_layout {
-            WorkspaceLayout::Stacked => "Side by side",
-            WorkspaceLayout::SideBySide => "Stacked",
+        let (layout_label, layout_icon) = match self.workspace_layout {
+            WorkspaceLayout::Stacked => ("Side by side", IconName::PanelRight),
+            WorkspaceLayout::SideBySide => ("Stacked", IconName::PanelBottom),
         };
         div()
             .flex()
@@ -65,16 +66,44 @@ impl YttmApp {
             .border_color(cx.theme().border)
             .child("YTT Maker")
             .child(
-                Button::new("toggle-layout")
-                    .label(toggle_label)
-                    .ghost()
-                    .on_click(cx.listener(|this, _, _, cx| {
-                        this.workspace_layout = match this.workspace_layout {
-                            WorkspaceLayout::Stacked => WorkspaceLayout::SideBySide,
-                            WorkspaceLayout::SideBySide => WorkspaceLayout::Stacked,
-                        };
-                        cx.notify();
-                    })),
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .child(
+                        Button::new("open-file")
+                            .icon(IconName::FolderOpen)
+                            .label("Open")
+                            .ghost()
+                            .on_click(|_, _, _| {}),
+                    )
+                    .child(
+                        Button::new("save-file")
+                            .icon(IconName::Save)
+                            .label("Save")
+                            .ghost()
+                            .on_click(|_, _, _| {}),
+                    )
+                    .child(
+                        Button::new("add-cue")
+                            .icon(IconName::Plus)
+                            .label("Add cue")
+                            .ghost()
+                            .on_click(|_, _, _| {}),
+                    )
+                    .child(
+                        Button::new("toggle-layout")
+                            .icon(layout_icon)
+                            .label(layout_label)
+                            .ghost()
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                this.workspace_layout = match this.workspace_layout {
+                                    WorkspaceLayout::Stacked => WorkspaceLayout::SideBySide,
+                                    WorkspaceLayout::SideBySide => WorkspaceLayout::Stacked,
+                                };
+                                cx.notify();
+                            })),
+                    ),
             )
     }
 
