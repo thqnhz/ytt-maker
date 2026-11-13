@@ -1,11 +1,19 @@
 use gpui_kit::component::ActiveTheme as _;
 use gpui_kit::*;
 
-struct YttmApp;
+use yttm_core::{Cue, Document};
+
+struct YttmApp {
+    document: Document,
+}
 
 impl YttmApp {
     fn new(_window: &mut Window, _cx: &mut Context<Self>) -> Self {
-        Self {}
+        Self {
+            document: Document {
+                cues: sample_cues(),
+            },
+        }
     }
 }
 
@@ -88,17 +96,101 @@ impl YttmApp {
                     .border_color(cx.theme().border)
                     .child("Cue editor"),
             )
+            .child(self.render_cue_table(cx))
+    }
+
+    fn render_cue_table(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .flex()
+            .flex_col()
+            .flex_1()
+            .min_h_0()
+            .child(render_cue_header(cx))
             .child(
                 div()
+                    .id("cue-rows")
                     .flex()
+                    .flex_col()
                     .flex_1()
                     .min_h_0()
-                    .items_center()
-                    .justify_center()
-                    .text_color(cx.theme().muted_foreground)
-                    .child("Spreadsheet placeholder"),
+                    .children(self.document.cues.iter().map(|cue| render_cue_row(cue, cx))),
             )
     }
+}
+
+fn render_cue_header(cx: &Context<YttmApp>) -> impl IntoElement {
+    div()
+        .flex()
+        .items_center()
+        .px_3()
+        .h_8()
+        .border_b_1()
+        .border_color(cx.theme().border)
+        .text_color(cx.theme().muted_foreground)
+        .child(div().w_24().child("Start"))
+        .child(div().w_24().child("End"))
+        .child(div().flex_1().min_w_0().child("Subtitle"))
+        .child(div().w_16().child("Pos X"))
+        .child(div().w_16().child("Pos Y"))
+}
+
+fn render_cue_row(cue: &Cue, cx: &Context<YttmApp>) -> impl IntoElement {
+    div()
+        .flex()
+        .items_center()
+        .px_3()
+        .h_8()
+        .border_b_1()
+        .border_color(cx.theme().border)
+        .child(div().w_24().child(format_ms(cue.start_ms)))
+        .child(div().w_24().child(format_ms(cue.end_ms)))
+        .child(div().flex_1().min_w_0().child(cue.text.clone()))
+        .child(div().w_16().child(format_opt_i32(cue.pos_x)))
+        .child(div().w_16().child(format_opt_i32(cue.pos_y)))
+}
+
+fn sample_cues() -> Vec<Cue> {
+    vec![
+        Cue {
+            start_ms: 1_000,
+            end_ms: 3_500,
+            text: "First line".into(),
+            pos_x: None,
+            pos_y: None,
+        },
+        Cue {
+            start_ms: 4_000,
+            end_ms: 6_200,
+            text: "Second line, positioned".into(),
+            pos_x: Some(50),
+            pos_y: Some(80),
+        },
+        Cue {
+            start_ms: 7_000,
+            end_ms: 9_000,
+            text: "Third line".into(),
+            pos_x: Some(10),
+            pos_y: None,
+        },
+    ]
+}
+
+fn format_ms(ms: u64) -> String {
+    let total_secs = ms / 1000;
+    let millis = ms % 1000;
+    let secs = total_secs % 60;
+    let mins = (total_secs / 60) % 60;
+    let hours = total_secs / 3600;
+
+    if hours > 0 {
+        format!("{hours:02}:{mins:02}:{secs:02}.{millis:03}")
+    } else {
+        format!("{mins:02}:{secs:02}.{millis:03}")
+    }
+}
+
+fn format_opt_i32(value: Option<i32>) -> String {
+    value.map(|v| v.to_string()).unwrap_or_else(|| "-".into())
 }
 
 fn main() {
