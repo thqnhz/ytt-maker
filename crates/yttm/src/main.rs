@@ -1,21 +1,12 @@
-use gpui_kit::component::ActiveTheme as _;
+use gpui_kit::base::resizable_panel;
+use gpui_kit::component::{ActiveTheme as _, v_resizable};
 use gpui_kit::*;
 
-use yttm_core::{Cue, Document};
+use yttm_core::Cue;
 
-struct YttmApp {
-    document: Document,
-}
+mod app;
 
-impl YttmApp {
-    fn new(_window: &mut Window, _cx: &mut Context<Self>) -> Self {
-        Self {
-            document: Document {
-                cues: sample_cues(),
-            },
-        }
-    }
-}
+use crate::app::YttmApp;
 
 impl Render for YttmApp {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -28,12 +19,22 @@ impl Render for YttmApp {
             .child(self.render_top_bar(cx))
             .child(
                 div()
+                    .id("workspace")
                     .flex()
                     .flex_col()
                     .flex_1()
                     .min_h_0()
-                    .child(self.render_video_area(cx))
-                    .child(self.render_editor_area(cx)),
+                    .p_3()
+                    .child(
+                        v_resizable("main-split")
+                            .with_state(&self.main_split)
+                            .child(resizable_panel().child(self.render_video_area(cx)))
+                            .child(
+                                resizable_panel()
+                                    .size(px(200.))
+                                    .child(self.render_editor_area(cx)),
+                            ),
+                    ),
             )
     }
 }
@@ -55,11 +56,10 @@ impl YttmApp {
             .id("video-area")
             .flex()
             .flex_col()
-            .flex_1()
+            .size_full()
             .min_h_0()
             .items_center()
             .justify_center()
-            .m_3()
             .gap_1()
             .rounded(cx.theme().radius)
             .border_1()
@@ -78,10 +78,8 @@ impl YttmApp {
             .id("cue-editor-area")
             .flex()
             .flex_col()
-            .h_64()
+            .size_full()
             .min_h_0()
-            .mx_3()
-            .mb_3()
             .rounded(cx.theme().radius)
             .border_1()
             .border_color(cx.theme().border)
@@ -147,32 +145,6 @@ fn render_cue_row(cue: &Cue, cx: &Context<YttmApp>) -> impl IntoElement {
         .child(div().flex_1().min_w_0().child(cue.text.clone()))
         .child(div().w_16().child(format_opt_i32(cue.pos_x)))
         .child(div().w_16().child(format_opt_i32(cue.pos_y)))
-}
-
-fn sample_cues() -> Vec<Cue> {
-    vec![
-        Cue {
-            start_ms: 1_000,
-            end_ms: 3_500,
-            text: "First line".into(),
-            pos_x: None,
-            pos_y: None,
-        },
-        Cue {
-            start_ms: 4_000,
-            end_ms: 6_200,
-            text: "Second line, positioned".into(),
-            pos_x: Some(50),
-            pos_y: Some(80),
-        },
-        Cue {
-            start_ms: 7_000,
-            end_ms: 9_000,
-            text: "Third line".into(),
-            pos_x: Some(10),
-            pos_y: None,
-        },
-    ]
 }
 
 fn format_ms(ms: u64) -> String {
