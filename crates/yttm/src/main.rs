@@ -15,15 +15,88 @@ impl Render for YttmApp {
             .size_full()
             .flex()
             .flex_col()
-            .items_center()
-            .justify_center()
             .bg(cx.theme().background)
             .text_color(cx.theme().foreground)
+            .child(self.render_top_bar(cx))
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .flex_1()
+                    .min_h_0()
+                    .child(self.render_video_area(cx))
+                    .child(self.render_editor_area(cx)),
+            )
+    }
+}
+
+impl YttmApp {
+    fn render_top_bar(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .flex()
+            .items_center()
+            .px_4()
+            .h_10()
+            .border_b_1()
+            .border_color(cx.theme().border)
             .child("YTT Maker")
+    }
+
+    fn render_video_area(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .id("video-area")
+            .flex()
+            .flex_col()
+            .flex_1()
+            .min_h_0()
+            .items_center()
+            .justify_center()
+            .m_3()
+            .gap_1()
+            .rounded(cx.theme().radius)
+            .border_1()
+            .border_color(cx.theme().border)
+            .bg(cx.theme().muted)
+            .child("Video preview")
             .child(
                 div()
                     .text_color(cx.theme().muted_foreground)
-                    .child("Placeholder"),
+                    .child("Player + subtitle overlay"),
+            )
+    }
+
+    fn render_editor_area(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .id("cue-editor-area")
+            .flex()
+            .flex_col()
+            .h_64()
+            .min_h_0()
+            .mx_3()
+            .mb_3()
+            .rounded(cx.theme().radius)
+            .border_1()
+            .border_color(cx.theme().border)
+            .bg(cx.theme().muted)
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .px_3()
+                    .h_8()
+                    .border_b_1()
+                    .border_color(cx.theme().border)
+                    .child("Cue editor"),
+            )
+            .child(
+                div()
+                    .flex()
+                    .flex_1()
+                    .min_h_0()
+                    .items_center()
+                    .justify_center()
+                    .text_color(cx.theme().muted_foreground)
+                    .child("Spreadsheet placeholder"),
             )
     }
 }
