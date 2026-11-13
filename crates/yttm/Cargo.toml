@@ -8,3 +8,5 @@ readme.workspace = true
 
 [dependencies]
 gpui-kit.workspace = true
+
+yttm-core = { path = "../yttm-core" }
