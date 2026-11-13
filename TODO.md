@@ -20,7 +20,7 @@ This list is not exhausted
     - [ ] Double click to add new one (?)
     - [ ] Drag at corner to change font size
 - [ ] Spreadsheet editor
-    - [ ] `| Start | End | Subtitle | PosX | PosY |` columns
+    - [x] `| Start | End | Subtitle | PosX | PosY |` columns
     - [ ] Maybe a color/background column as well
     - [ ] IDK if this is necessary but have a way to optimize a million rows
     - [ ] Add subtitle button to add at the current video position
