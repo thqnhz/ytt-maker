@@ -27,6 +27,18 @@ impl YttmApp {
             side_split: cx.new(|_| ResizableState::default()),
         }
     }
+
+    pub fn run() {
+        gpui_kit::application()
+            .with_assets(gpui_kit::assets::AllAssets)
+            .run(|cx| {
+                gpui_kit::init(cx);
+                gpui_kit::open_window(WindowOptions::default(), cx, |window, cx| {
+                    cx.new(|cx| YttmApp::new(window, cx))
+                })
+                .expect("failed to open window");
+            });
+    }
 }
 
 fn sample_cues() -> Vec<Cue> {
@@ -50,6 +62,27 @@ fn sample_cues() -> Vec<Cue> {
             end_ms: 9_000,
             text: "Third line".into(),
             pos_x: Some(10),
+            pos_y: None,
+        },
+        Cue {
+            start_ms: 9_000,
+            end_ms: 11_000,
+            text: "Fourth line".into(),
+            pos_x: None,
+            pos_y: None,
+        },
+        Cue {
+            start_ms: 15_000,
+            end_ms: 20_000,
+            text: "Fifth line".into(),
+            pos_x: None,
+            pos_y: None,
+        },
+        Cue {
+            start_ms: 21_000,
+            end_ms: 23_000,
+            text: "Sixth line".into(),
+            pos_x: None,
             pos_y: None,
         },
     ]

@@ -138,6 +138,7 @@ impl YttmApp {
                     .flex_col()
                     .flex_1()
                     .min_h_0()
+                    .overflow_y_scroll()
                     .children(self.document.cues.iter().map(|cue| render_cue_row(cue, cx))),
             )
     }
@@ -193,13 +194,5 @@ fn format_opt_i32(value: Option<i32>) -> String {
 }
 
 fn main() {
-    gpui_kit::application()
-        .with_assets(gpui_kit::assets::AllAssets)
-        .run(|cx| {
-            gpui_kit::init(cx);
-            gpui_kit::open_window(WindowOptions::default(), cx, |window, cx| {
-                cx.new(|cx| YttmApp::new(window, cx))
-            })
-            .expect("failed to open window");
-        });
+    YttmApp::run();
 }
