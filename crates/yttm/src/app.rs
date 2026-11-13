@@ -3,9 +3,17 @@ use gpui_kit::*;
 
 use yttm_core::{Cue, Document};
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum WorkspaceLayout {
+    Stacked,
+    SideBySide,
+}
+
 pub struct YttmApp {
     pub document: Document,
-    pub main_split: Entity<ResizableState>,
+    pub workspace_layout: WorkspaceLayout,
+    pub stacked_split: Entity<ResizableState>,
+    pub side_split: Entity<ResizableState>,
 }
 
 impl YttmApp {
@@ -14,7 +22,9 @@ impl YttmApp {
             document: Document {
                 cues: sample_cues(),
             },
-            main_split: cx.new(|_| ResizableState::default()),
+            workspace_layout: WorkspaceLayout::Stacked,
+            stacked_split: cx.new(|_| ResizableState::default()),
+            side_split: cx.new(|_| ResizableState::default()),
         }
     }
 }

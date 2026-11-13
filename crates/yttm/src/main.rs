@@ -1,15 +1,34 @@
 use gpui_kit::base::resizable_panel;
-use gpui_kit::component::{ActiveTheme as _, v_resizable};
+use gpui_kit::component::button::*;
+use gpui_kit::component::{ActiveTheme as _, h_resizable, v_resizable};
 use gpui_kit::*;
 
 use yttm_core::Cue;
 
 mod app;
 
-use crate::app::YttmApp;
+use crate::app::{WorkspaceLayout, YttmApp};
 
 impl Render for YttmApp {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let workspace = match self.workspace_layout {
+            WorkspaceLayout::Stacked => v_resizable("main-split-stacked")
+                .with_state(&self.stacked_split)
+                .child(
+                    resizable_panel()
+                        .size(px(400.))
+                        .child(self.render_video_area(cx)),
+                )
+                .child(resizable_panel().child(self.render_editor_area(cx))),
+            WorkspaceLayout::SideBySide => h_resizable("main-split-side")
+                .with_state(&self.side_split)
+                .child(
+                    resizable_panel()
+                        .size(px(480.))
+                        .child(self.render_video_area(cx)),
+                )
+                .child(resizable_panel().child(self.render_editor_area(cx))),
+        };
         div()
             .size_full()
             .flex()
@@ -25,30 +44,38 @@ impl Render for YttmApp {
                     .flex_1()
                     .min_h_0()
                     .p_3()
-                    .child(
-                        v_resizable("main-split")
-                            .with_state(&self.main_split)
-                            .child(resizable_panel().child(self.render_video_area(cx)))
-                            .child(
-                                resizable_panel()
-                                    .size(px(200.))
-                                    .child(self.render_editor_area(cx)),
-                            ),
-                    ),
+                    .child(workspace),
             )
     }
 }
 
 impl YttmApp {
     fn render_top_bar(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let toggle_label = match self.workspace_layout {
+            WorkspaceLayout::Stacked => "Side by side",
+            WorkspaceLayout::SideBySide => "Stacked",
+        };
         div()
             .flex()
             .items_center()
+            .justify_between()
             .px_4()
             .h_10()
             .border_b_1()
             .border_color(cx.theme().border)
             .child("YTT Maker")
+            .child(
+                Button::new("toggle-layout")
+                    .label(toggle_label)
+                    .ghost()
+                    .on_click(cx.listener(|this, _, _, cx| {
+                        this.workspace_layout = match this.workspace_layout {
+                            WorkspaceLayout::Stacked => WorkspaceLayout::SideBySide,
+                            WorkspaceLayout::SideBySide => WorkspaceLayout::Stacked,
+                        };
+                        cx.notify();
+                    })),
+            )
     }
 
     fn render_video_area(&self, cx: &mut Context<Self>) -> impl IntoElement {
