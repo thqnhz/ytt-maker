@@ -58,8 +58,8 @@ impl Render for YttmApp {
 impl YttmApp {
     fn render_top_bar(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let (layout_label, layout_icon) = match self.workspace_layout {
-            WorkspaceLayout::Stacked => ("Side by side", IconName::PanelRight),
-            WorkspaceLayout::SideBySide => ("Stacked", IconName::PanelBottom),
+            WorkspaceLayout::Stacked => ("Side by side", IconName::PanelBottom),
+            WorkspaceLayout::SideBySide => ("Stacked", IconName::PanelRight),
         };
         div()
             .flex()
