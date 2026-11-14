@@ -58,8 +58,8 @@ impl Render for YttmApp {
 impl YttmApp {
     fn render_top_bar(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let (layout_label, layout_icon) = match self.workspace_layout {
-            WorkspaceLayout::Stacked => ("Side by side", IconName::PanelBottom),
-            WorkspaceLayout::SideBySide => ("Stacked", IconName::PanelRight),
+            WorkspaceLayout::Stacked => ("Switch to Side by side", IconName::PanelBottom),
+            WorkspaceLayout::SideBySide => ("Switch to Stacked", IconName::PanelRight),
         };
         div()
             .flex()
@@ -74,26 +74,26 @@ impl YttmApp {
                 div()
                     .flex()
                     .items_center()
-                    .gap_2()
+                    .gap_1()
                     .child(
                         Button::new("open-file")
                             .icon(IconName::FolderOpen)
-                            .label("Open")
                             .ghost()
+                            .tooltip("Open")
                             .on_click(|_, _, _| {}),
                     )
                     .child(
                         Button::new("save-file")
                             .icon(IconName::Save)
-                            .label("Save")
                             .ghost()
+                            .tooltip("Save")
                             .on_click(|_, _, _| {}),
                     )
                     .child(
                         Button::new("toggle-layout")
                             .icon(layout_icon)
-                            .label(layout_label)
                             .ghost()
+                            .tooltip(layout_label)
                             .on_click(cx.listener(|this, _, _, cx| {
                                 this.workspace_layout = match this.workspace_layout {
                                     WorkspaceLayout::Stacked => WorkspaceLayout::SideBySide,

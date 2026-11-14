@@ -32,6 +32,7 @@ pub fn render_editor_area(cues: &[Cue], cx: &Context<YttmApp>) -> impl IntoEleme
                     Button::new("add-cue")
                         .icon(IconName::Plus)
                         .ghost()
+                        .tooltip("Add cue")
                         .on_click(cx.listener(|this, _, _, cx| {
                             this.add_cue();
                             cx.notify();
