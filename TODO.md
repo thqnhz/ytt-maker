@@ -24,7 +24,8 @@ This list is not exhausted
     - [ ] Maybe a color/background column as well
     - [ ] IDK if this is necessary but have a way to optimize a million rows
     - [ ] Add subtitle button to add at the current video position
-    - [ ] Add blank row above/below
+    - [x] Add subtitle button to add at the end of the list
+    - [x] Add blank row above/below
 - [ ] .YTT format
     - [ ] Import
         - [ ] Import from different formats?
