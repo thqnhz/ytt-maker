@@ -19,10 +19,11 @@ impl Render for YttmApp {
                         .size(px(400.))
                         .child(self.render_video_area(cx)),
                 )
-                .child(
-                    resizable_panel()
-                        .child(cue_editor::render_editor_area(&self.document.cues, cx)),
-                ),
+                .child(resizable_panel().child(cue_editor::render_editor_area(
+                    &self.document.cues,
+                    self.selected_cue,
+                    cx,
+                ))),
             WorkspaceLayout::SideBySide => h_resizable("main-split-side")
                 .with_state(&self.side_split)
                 .child(
@@ -30,10 +31,11 @@ impl Render for YttmApp {
                         .size(px(480.))
                         .child(self.render_video_area(cx)),
                 )
-                .child(
-                    resizable_panel()
-                        .child(cue_editor::render_editor_area(&self.document.cues, cx)),
-                ),
+                .child(resizable_panel().child(cue_editor::render_editor_area(
+                    &self.document.cues,
+                    self.selected_cue,
+                    cx,
+                ))),
         };
         div()
             .size_full()

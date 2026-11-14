@@ -11,6 +11,7 @@ pub enum WorkspaceLayout {
 
 pub struct YttmApp {
     pub document: Document,
+    pub selected_cue: Option<usize>,
     pub workspace_layout: WorkspaceLayout,
     pub stacked_split: Entity<ResizableState>,
     pub side_split: Entity<ResizableState>,
@@ -22,6 +23,7 @@ impl YttmApp {
             document: Document {
                 cues: sample_cues(),
             },
+            selected_cue: None,
             workspace_layout: WorkspaceLayout::Stacked,
             stacked_split: cx.new(|_| ResizableState::default()),
             side_split: cx.new(|_| ResizableState::default()),
@@ -38,6 +40,7 @@ impl YttmApp {
             pos_x: None,
             pos_y: None,
         });
+        self.selected_cue = Some(self.document.cues.len() - 1);
     }
 
     pub fn run() {

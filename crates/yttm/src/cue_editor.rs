@@ -7,7 +7,11 @@ use yttm_core::Cue;
 
 use crate::app::YttmApp;
 
-pub fn render_editor_area(cues: &[Cue], cx: &Context<YttmApp>) -> impl IntoElement {
+pub fn render_editor_area(
+    cues: &[Cue],
+    selected_cue: Option<usize>,
+    cx: &Context<YttmApp>,
+) -> impl IntoElement {
     div()
         .id("cue-editor-area")
         .flex()
@@ -39,10 +43,14 @@ pub fn render_editor_area(cues: &[Cue], cx: &Context<YttmApp>) -> impl IntoEleme
                         })),
                 ),
         )
-        .child(render_cue_table(cues, cx))
+        .child(render_cue_table(cues, selected_cue, cx))
 }
 
-fn render_cue_table(cues: &[Cue], cx: &Context<YttmApp>) -> impl IntoElement {
+fn render_cue_table(
+    cues: &[Cue],
+    selected_cue: Option<usize>,
+    cx: &Context<YttmApp>,
+) -> impl IntoElement {
     div()
         .flex()
         .flex_col()
@@ -57,7 +65,11 @@ fn render_cue_table(cues: &[Cue], cx: &Context<YttmApp>) -> impl IntoElement {
                 .flex_1()
                 .min_h_0()
                 .overflow_y_scroll()
-                .children(cues.iter().map(|cue| render_cue_row(cue, cx))),
+                .children(
+                    cues.iter()
+                        .enumerate()
+                        .map(|(ix, cue)| render_cue_row(ix, cue, selected_cue, cx)),
+                ),
         )
 }
 
@@ -77,19 +89,35 @@ fn render_cue_header(cx: &Context<YttmApp>) -> impl IntoElement {
         .child(div().w_16().child("Pos Y"))
 }
 
-fn render_cue_row(cue: &Cue, cx: &Context<YttmApp>) -> impl IntoElement {
-    div()
+fn render_cue_row(
+    ix: usize,
+    cue: &Cue,
+    selected_cue: Option<usize>,
+    cx: &Context<YttmApp>,
+) -> impl IntoElement {
+    let is_selected = selected_cue == Some(ix);
+    let mut row = div()
+        .id(("cue-row", ix))
         .flex()
         .items_center()
         .px_3()
         .h_8()
         .border_b_1()
-        .border_color(cx.theme().border)
-        .child(div().w_24().child(format_ms(cue.start_ms)))
-        .child(div().w_24().child(format_ms(cue.end_ms)))
-        .child(div().flex_1().min_w_0().child(cue.text.clone()))
-        .child(div().w_16().child(format_opt_i32(cue.pos_x)))
-        .child(div().w_16().child(format_opt_i32(cue.pos_y)))
+        .border_color(cx.theme().border);
+
+    if is_selected {
+        row = row.bg(cx.theme().selection);
+    }
+
+    row.on_click(cx.listener(move |this, _, _, cx| {
+        this.selected_cue = Some(ix);
+        cx.notify();
+    }))
+    .child(div().w_24().child(format_ms(cue.start_ms)))
+    .child(div().w_24().child(format_ms(cue.end_ms)))
+    .child(div().flex_1().min_w_0().child(cue.text.clone()))
+    .child(div().w_16().child(format_opt_i32(cue.pos_x)))
+    .child(div().w_16().child(format_opt_i32(cue.pos_y)))
 }
 
 fn format_ms(ms: u64) -> String {
