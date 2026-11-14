@@ -30,17 +30,30 @@ impl YttmApp {
         }
     }
 
-    pub fn add_cue(&mut self) {
+    /// Append a cue entry at the end
+    pub fn append_cue(&mut self) {
         let start_ms = self.document.cues.last().map(|cue| cue.end_ms).unwrap_or(0);
+        let index = self.document.cues.len();
+        self.add_cue_at(index, start_ms, start_ms + 2_000);
+    }
 
-        self.document.cues.push(Cue {
-            start_ms,
-            end_ms: start_ms + 2_000,
-            text: String::new(),
-            pos_x: None,
-            pos_y: None,
-        });
-        self.selected_cue = Some(self.document.cues.len() - 1);
+    pub fn add_cue_above_selected(&mut self) {
+        let Some(ix) = self.selected_cue else {
+            return;
+        };
+
+        let end_ms = self.document.cues[ix].start_ms;
+        let start_ms = end_ms.saturating_sub(2_000);
+        self.add_cue_at(ix, start_ms, end_ms);
+    }
+
+    pub fn add_cue_below_selected(&mut self) {
+        let Some(ix) = self.selected_cue else {
+            return;
+        };
+
+        let start_ms = self.document.cues[ix].end_ms;
+        self.add_cue_at(ix + 1, start_ms, start_ms + 2_000);
     }
 
     pub fn delete_selected_cue(&mut self) {
@@ -72,6 +85,20 @@ impl YttmApp {
                 })
                 .expect("failed to open window");
             });
+    }
+
+    fn add_cue_at(&mut self, index: usize, start_ms: u64, end_ms: u64) {
+        self.document.cues.insert(
+            index,
+            Cue {
+                start_ms,
+                end_ms,
+                text: String::new(),
+                pos_x: None,
+                pos_y: None,
+            },
+        );
+        self.selected_cue = Some(index);
     }
 }
 

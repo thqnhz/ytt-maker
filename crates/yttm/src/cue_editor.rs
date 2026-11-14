@@ -39,7 +39,29 @@ pub fn render_editor_area(
                         .ghost()
                         .tooltip("Add cue")
                         .on_click(cx.listener(|this, _, _, cx| {
-                            this.add_cue();
+                            this.append_cue();
+                            cx.notify();
+                        })),
+                )
+                .child(
+                    Button::new("add-cue-above")
+                        .icon(IconName::ArrowUp)
+                        .ghost()
+                        .tooltip("Add cue above selection")
+                        .disabled(selected_cue.is_none())
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.add_cue_above_selected();
+                            cx.notify();
+                        })),
+                )
+                .child(
+                    Button::new("add-cue-below")
+                        .icon(IconName::ArrowDown)
+                        .ghost()
+                        .tooltip("Add cue below selection")
+                        .disabled(selected_cue.is_none())
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.add_cue_below_selected();
                             cx.notify();
                         })),
                 )
