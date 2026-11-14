@@ -1,5 +1,6 @@
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Cue {
+    pub id: u64,
     pub start_ms: u64,
     pub end_ms: u64,
     pub text: String,

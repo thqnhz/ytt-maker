@@ -10,7 +10,7 @@ use crate::app::YttmApp;
 
 pub fn render_editor_area(
     cues: &[Cue],
-    selected_cue: Option<usize>,
+    selected_cue: Option<u64>,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
     div()
@@ -82,7 +82,7 @@ pub fn render_editor_area(
 
 fn render_cue_table(
     cues: &[Cue],
-    selected_cue: Option<usize>,
+    selected_cue: Option<u64>,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
     div()
@@ -99,11 +99,7 @@ fn render_cue_table(
                 .flex_1()
                 .min_h_0()
                 .overflow_y_scroll()
-                .children(
-                    cues.iter()
-                        .enumerate()
-                        .map(|(ix, cue)| render_cue_row(ix, cue, selected_cue, cx)),
-                ),
+                .children(cues.iter().map(|cue| render_cue_row(cue, selected_cue, cx))),
         )
 }
 
@@ -123,15 +119,12 @@ fn render_cue_header(cx: &Context<YttmApp>) -> impl IntoElement {
         .child(div().w_16().child("Pos Y"))
 }
 
-fn render_cue_row(
-    ix: usize,
-    cue: &Cue,
-    selected_cue: Option<usize>,
-    cx: &Context<YttmApp>,
-) -> impl IntoElement {
-    let is_selected = selected_cue == Some(ix);
+fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -> impl IntoElement {
+    let is_selected = selected_cue == Some(cue.id);
+    let cue_id = cue.id;
+
     let mut row = div()
-        .id(("cue-row", ix))
+        .id(("cue-row", cue_id as usize))
         .flex()
         .items_center()
         .px_3()
@@ -144,7 +137,7 @@ fn render_cue_row(
     }
 
     row.on_click(cx.listener(move |this, _, _, cx| {
-        this.selected_cue = Some(ix);
+        this.selected_cue = Some(cue_id);
         cx.notify();
     }))
     .child(div().w_24().child(format_ms(cue.start_ms)))
