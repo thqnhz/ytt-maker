@@ -1,4 +1,6 @@
+use gpui_kit::assets::IconName;
 use gpui_kit::component::ActiveTheme as _;
+use gpui_kit::component::button::*;
 use gpui_kit::*;
 
 use yttm_core::Cue;
@@ -18,13 +20,23 @@ pub fn render_editor_area(cues: &[Cue], cx: &Context<YttmApp>) -> impl IntoEleme
         .bg(cx.theme().muted)
         .child(
             div()
+                .id("cue-editor-toolbar")
                 .flex()
                 .items_center()
-                .px_3()
+                .gap_1()
+                .px_2()
                 .h_8()
                 .border_b_1()
                 .border_color(cx.theme().border)
-                .child("Cue editor"),
+                .child(
+                    Button::new("add-cue")
+                        .icon(IconName::Plus)
+                        .ghost()
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.add_cue();
+                            cx.notify();
+                        })),
+                ),
         )
         .child(render_cue_table(cues, cx))
 }

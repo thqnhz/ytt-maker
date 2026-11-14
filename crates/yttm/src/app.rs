@@ -28,6 +28,18 @@ impl YttmApp {
         }
     }
 
+    pub fn add_cue(&mut self) {
+        let start_ms = self.document.cues.last().map(|cue| cue.end_ms).unwrap_or(0);
+
+        self.document.cues.push(Cue {
+            start_ms,
+            end_ms: start_ms + 2_000,
+            text: String::new(),
+            pos_x: None,
+            pos_y: None,
+        });
+    }
+
     pub fn run() {
         gpui_kit::application()
             .with_assets(gpui_kit::assets::AllAssets)

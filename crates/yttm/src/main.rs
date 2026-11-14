@@ -90,13 +90,6 @@ impl YttmApp {
                             .on_click(|_, _, _| {}),
                     )
                     .child(
-                        Button::new("add-cue")
-                            .icon(IconName::Plus)
-                            .label("Add cue")
-                            .ghost()
-                            .on_click(|_, _, _| {}),
-                    )
-                    .child(
                         Button::new("toggle-layout")
                             .icon(layout_icon)
                             .label(layout_label)
