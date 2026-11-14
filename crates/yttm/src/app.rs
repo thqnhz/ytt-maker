@@ -43,6 +43,25 @@ impl YttmApp {
         self.selected_cue = Some(self.document.cues.len() - 1);
     }
 
+    pub fn delete_selected_cue(&mut self) {
+        let Some(ix) = self.selected_cue else {
+            return;
+        };
+
+        self.document.cues.remove(ix);
+
+        self.selected_cue = if self.document.cues.is_empty() {
+            // Empty -> Unselect
+            None
+        } else if ix == 0 {
+            // First entry -> keep first entry
+            Some(0)
+        } else {
+            // Non-first entry -> to above entry
+            Some(ix - 1)
+        }
+    }
+
     pub fn run() {
         gpui_kit::application()
             .with_assets(gpui_kit::assets::AllAssets)

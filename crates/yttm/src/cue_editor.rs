@@ -1,6 +1,7 @@
 use gpui_kit::assets::IconName;
 use gpui_kit::component::ActiveTheme as _;
 use gpui_kit::component::button::*;
+use gpui_kit::component::*;
 use gpui_kit::*;
 
 use yttm_core::Cue;
@@ -39,6 +40,17 @@ pub fn render_editor_area(
                         .tooltip("Add cue")
                         .on_click(cx.listener(|this, _, _, cx| {
                             this.add_cue();
+                            cx.notify();
+                        })),
+                )
+                .child(
+                    Button::new("delete-cue")
+                        .icon(IconName::Minus)
+                        .ghost()
+                        .tooltip("Delete selected cue")
+                        .disabled(selected_cue.is_none())
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.delete_selected_cue();
                             cx.notify();
                         })),
                 ),
