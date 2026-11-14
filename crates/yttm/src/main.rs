@@ -57,7 +57,7 @@ impl Render for YttmApp {
 
 impl YttmApp {
     fn render_top_bar(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let (layout_label, layout_icon) = match self.workspace_layout {
+        let (layout_tooltip, layout_icon) = match self.workspace_layout {
             WorkspaceLayout::Stacked => ("Switch to Side by side", IconName::PanelBottom),
             WorkspaceLayout::SideBySide => ("Switch to Stacked", IconName::PanelRight),
         };
@@ -93,7 +93,7 @@ impl YttmApp {
                         Button::new("toggle-layout")
                             .icon(layout_icon)
                             .ghost()
-                            .tooltip(layout_label)
+                            .tooltip(layout_tooltip)
                             .on_click(cx.listener(|this, _, _, cx| {
                                 this.workspace_layout = match this.workspace_layout {
                                     WorkspaceLayout::Stacked => WorkspaceLayout::SideBySide,
