@@ -13,6 +13,7 @@ pub fn render_editor_area(
     selected_cue: Option<u64>,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
+    let selected = selected_cue.and_then(|id| cues.iter().find(|cue| cue.id == id));
     div()
         .id("cue-editor-area")
         .flex()
@@ -78,6 +79,7 @@ pub fn render_editor_area(
                 ),
         )
         .child(render_cue_table(cues, selected_cue, cx))
+        .child(render_selected_details(selected, cx))
 }
 
 fn render_cue_table(
@@ -136,15 +138,77 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
         row = row.bg(cx.theme().selection);
     }
 
+    let mut subtitle = div().flex_1().min_w_0();
+    if cue.text.is_empty() {
+        subtitle = subtitle
+            .text_color(cx.theme().muted_foreground)
+            .child("(empty)")
+    } else {
+        subtitle = subtitle.child(cue.text.clone());
+    }
+
     row.on_click(cx.listener(move |this, _, _, cx| {
         this.selected_cue = Some(cue_id);
         cx.notify();
     }))
     .child(div().w_24().child(format_ms(cue.start_ms)))
     .child(div().w_24().child(format_ms(cue.end_ms)))
-    .child(div().flex_1().min_w_0().child(cue.text.clone()))
+    .child(subtitle)
     .child(div().w_16().child(format_opt_i32(cue.pos_x)))
     .child(div().w_16().child(format_opt_i32(cue.pos_y)))
+}
+
+fn render_selected_details(selected: Option<&Cue>, cx: &Context<YttmApp>) -> impl IntoElement {
+    let mut details = div()
+        .id("cue-detail")
+        .flex()
+        .flex_col()
+        .justify_center()
+        .gap_1()
+        .px_3()
+        .py_2()
+        .border_t_1()
+        .border_color(cx.theme().border);
+
+    if let Some(cue) = selected {
+        let mut subtitle = div();
+        if cue.text.is_empty() {
+            subtitle = subtitle
+                .text_color(cx.theme().muted_foreground)
+                .child("(empty)");
+        } else {
+            subtitle = subtitle.child(cue.text.clone())
+        }
+
+        details = details
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap_4()
+                    .text_color(cx.theme().muted_foreground)
+                    .child(format!(
+                        "{} - {}",
+                        format_ms(cue.start_ms),
+                        format_ms(cue.end_ms)
+                    ))
+                    .child(div().flex_1().min_w_0())
+                    .child(format!(
+                        "Pos X: {} Pos Y: {}",
+                        format_opt_i32(cue.pos_x),
+                        format_opt_i32(cue.pos_y),
+                    )),
+            )
+            .child(subtitle);
+    } else {
+        details = details.child(
+            div()
+                .text_color(cx.theme().muted_foreground)
+                .child("No cue selected"),
+        );
+    }
+
+    details
 }
 
 fn format_ms(ms: u64) -> String {
