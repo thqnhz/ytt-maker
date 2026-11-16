@@ -104,7 +104,7 @@ jobs:
         run: |
           set -eou pipefail
           TAG="nightly"
-          TIGLE="Nightly ($(date -u +'%Y-%m-%d'))"
+          TITLE="Nightly ($(date -u +'%Y-%m-%d'))"
           SHA="${GITHUB_SHA}"
           BODY="Automated nightly build from \`${SHA}\` on $(date -u +'%Y-%m-%d %H:%M UTC')."
 
