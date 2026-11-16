@@ -7,6 +7,4 @@ license-file.workspace = true
 readme.workspace = true
 
 [dependencies]
-gpui-kit.workspace = true
-
-yttm-core = { path = "../yttm-core" }
+yttm-ui = { path = "../yttm-ui" }

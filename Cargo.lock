@@ -8057,13 +8057,28 @@ dependencies = [
 name = "yttm"
 version = "0.1.0"
 dependencies = [
- "gpui-kit",
- "yttm-core",
+ "yttm-ui",
 ]
 
 [[package]]
 name = "yttm-core"
 version = "0.1.0"
+
+[[package]]
+name = "yttm-input"
+version = "0.1.0"
+dependencies = [
+ "gpui-kit",
+]
+
+[[package]]
+name = "yttm-ui"
+version = "0.1.0"
+dependencies = [
+ "gpui-kit",
+ "yttm-core",
+ "yttm-input",
+]
 
 [[package]]
 name = "zbus"

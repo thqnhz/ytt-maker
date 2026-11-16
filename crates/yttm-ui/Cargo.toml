@@ -1,0 +1,13 @@
+[package]
+name = "yttm-ui"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license-file.workspace = true
+readme.workspace = true
+
+[dependencies]
+gpui-kit.workspace = true
+
+yttm-core = { path = "../yttm-core" }
+yttm-input = { path = "../yttm-input" }

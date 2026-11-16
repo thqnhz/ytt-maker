@@ -1,6 +1,11 @@
 [workspace]
 resolver = "3"
-members = ["crates/*"]
+members = [
+    "crates/yttm",
+    "crates/yttm-core",
+    "crates/yttm-ui",
+    "crates/yttm-input",
+]
 
 [workspace.package]
 version = "0.1.0"
