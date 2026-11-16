@@ -2,8 +2,8 @@ use std::borrow::Cow;
 use std::time::Duration;
 
 use gpui_kit::base::ResizableState;
+use gpui_kit::component::input::{InputEvent, InputState};
 use gpui_kit::component::*;
-use gpui_kit::component::input::{InputState, InputEvent};
 use gpui_kit::*;
 
 use yttm_core::{Cue, Document};
@@ -34,13 +34,15 @@ impl YttmApp {
         let subtitle_input = cx.new(|cx| InputState::new(window, cx).placeholder("Subtitle text"));
 
         cx.subscribe(&subtitle_input, |this, state, event: &InputEvent, cx| {
-            if matches!(event, InputEvent::Change) && let Some(id) = this.selected_cue {
-                    let text = state.read(cx).value().to_string();
-                    if let Some(cue) = this.document.cues.iter_mut().find(|cue| cue.id == id) {
-                        cue.text = text;
-                        cx.notify();
-                    }
+            if matches!(event, InputEvent::Change)
+                && let Some(id) = this.selected_cue
+            {
+                let text = state.read(cx).value().to_string();
+                if let Some(cue) = this.document.cues.iter_mut().find(|cue| cue.id == id) {
+                    cue.text = text;
+                    cx.notify();
                 }
+            }
         })
         .detach();
 
@@ -58,7 +60,8 @@ impl YttmApp {
     }
 
     pub fn sync_subtitle_input(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let text = self.selected_cue
+        let text = self
+            .selected_cue
             .and_then(|id| self.document.cues.iter().find(|cue| cue.id == id))
             .map(|cue| cue.text.clone())
             .unwrap_or_default();

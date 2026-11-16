@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use gpui_kit::assets::IconName;
-use gpui_kit::base::{resizable_panel, ResizeHandleRenderer, ResizeHandleState};
+use gpui_kit::base::{ResizeHandleRenderer, ResizeHandleState, resizable_panel};
 use gpui_kit::component::button::*;
 use gpui_kit::component::theme::*;
 use gpui_kit::component::{h_resizable, v_resizable};
@@ -74,9 +74,10 @@ impl Render for YttmApp {
                     div().size_full().flex().flex_col().pt(px(4.)).child(
                         cue_editor::render_editor_area(
                             &self.document.cues,
-                        self.selected_cue,
-                        &self.subtitle_input,
-                        cx),
+                            self.selected_cue,
+                            &self.subtitle_input,
+                            cx,
+                        ),
                     ),
                 )),
             WorkspaceLayout::SideBySide => h_resizable("main-split-side")
@@ -93,8 +94,12 @@ impl Render for YttmApp {
                 )
                 .child(
                     resizable_panel().child(div().size_full().flex().pl(px(4.)).child(
-                        cue_editor::render_editor_area(&self.document.cues, self.selected_cue,
-                           &self.subtitle_input, cx),
+                        cue_editor::render_editor_area(
+                            &self.document.cues,
+                            self.selected_cue,
+                            &self.subtitle_input,
+                            cx,
+                        ),
                     )),
                 ),
         };

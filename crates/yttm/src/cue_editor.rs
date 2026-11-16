@@ -1,7 +1,7 @@
 use gpui_kit::assets::IconName;
 use gpui_kit::component::ActiveTheme as _;
 use gpui_kit::component::button::*;
-use gpui_kit::component::input::{Input, InputState};
+use gpui_kit::component::input::{Enter, Escape, Input, InputState};
 use gpui_kit::component::*;
 use gpui_kit::*;
 
@@ -168,7 +168,7 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
 fn render_selected_details(
     selected: Option<&Cue>,
     subtitle_input: &Entity<InputState>,
-    cx: &Context<YttmApp>
+    cx: &Context<YttmApp>,
 ) -> impl IntoElement {
     let mut details = div()
         .id("cue-detail")
@@ -200,9 +200,18 @@ fn render_selected_details(
                         "Pos X: {} Pos Y: {}",
                         format_opt_i32(cue.pos_x),
                         format_opt_i32(cue.pos_y),
-                    ))
+                    )),
             )
-            .child(Input::new(subtitle_input));
+            .child(
+                div()
+                    .on_action(cx.listener(|_, _: &Enter, window, cx| {
+                        window.blur(cx);
+                    }))
+                    .on_action(cx.listener(|_, _: &Escape, window, cx| {
+                        window.blur(cx);
+                    }))
+                    .child(Input::new(subtitle_input)),
+            );
     } else {
         details = details.child(
             div()
