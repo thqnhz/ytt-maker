@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::time::Duration;
 
 use gpui_kit::base::ResizableState;
@@ -148,6 +149,22 @@ impl YttmApp {
             .with_assets(gpui_kit::assets::AllAssets)
             .run(|cx| {
                 gpui_kit::init(cx);
+
+                cx.text_system()
+                    .add_fonts(vec![
+                        Cow::Borrowed(include_bytes!(
+                            "../../../assets/fonts/Inter/Inter-VariableFont_opsz,wght.ttf"
+                        )),
+                        Cow::Borrowed(include_bytes!(
+                            "../../../assets/fonts/Inter/Inter-Italic-VariableFont_opsz,wght.ttf"
+                        )),
+                    ])
+                    .expect("failed to load bundled UI font");
+
+                Theme::update(cx, |theme| {
+                    theme.font_family = "Inter".into();
+                });
+
                 gpui_kit::open_window(WindowOptions::default(), cx, |window, cx| {
                     cx.new(|cx| YttmApp::new(window, cx))
                 })
