@@ -188,9 +188,10 @@ fn render_selected_details(selected: Option<&Cue>, cx: &Context<YttmApp>) -> imp
                     .gap_4()
                     .text_color(cx.theme().muted_foreground)
                     .child(format!(
-                        "{} - {}",
+                        "{} - {} ({})",
                         format_ms(cue.start_ms),
-                        format_ms(cue.end_ms)
+                        format_ms(cue.end_ms),
+                        format_duration_ms(cue.end_ms.saturating_sub(cue.start_ms))
                     ))
                     .child(div().flex_1().min_w_0())
                     .child(format!(
@@ -209,6 +210,12 @@ fn render_selected_details(selected: Option<&Cue>, cx: &Context<YttmApp>) -> imp
     }
 
     details
+}
+
+fn format_duration_ms(ms: u64) -> String {
+    let secs = ms / 1000;
+    let millis = ms % 1000;
+    format!("{secs}.{millis:03}s")
 }
 
 fn format_ms(ms: u64) -> String {
