@@ -8,6 +8,7 @@ use gpui_kit::*;
 
 use crate::app::YttmApp;
 use crate::cue_editor;
+use crate::theme::*;
 use crate::workspace::*;
 
 fn no_hairline_resize_appearance() -> ResizeHandleRenderer {
@@ -124,8 +125,8 @@ impl Render for YttmApp {
 impl YttmApp {
     fn render_top_bar(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let is_dark = cx.theme().mode.is_dark();
-        let theme_tooltip = self.theme.tooltip(is_dark);
-        let theme_icon = self.theme.icon(is_dark);
+        let theme_tooltip = theme_toggle_tooltip(is_dark);
+        let theme_icon = theme_toggle_icon(is_dark);
         let layout_tooltip = Workspace::layout_tooltip(self.workspace.layout);
         let layout_icon = Workspace::layout_icon(self.workspace.layout);
 
