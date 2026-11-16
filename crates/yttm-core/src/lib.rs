@@ -12,9 +12,3 @@ pub struct Cue {
 pub struct Document {
     pub cues: Vec<Cue>,
 }
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum WorkspaceLayout {
-    Stacked,
-    SideBySide,
-}

@@ -1,5 +1,3 @@
-use yttm_ui::app::YttmApp;
-
 fn main() {
-    YttmApp::run();
+    yttm_ui::run();
 }
