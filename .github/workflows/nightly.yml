@@ -71,6 +71,12 @@ jobs:
           Copy-Item LICENSE dist/
           Compress-Archive -Path dist/* -DestinationPath "yttm-nightly-${{ matrix.name }}.zip"
 
+          # Tar it so download-artifact later would not unzip it
+          # Why the fuck would you auto unzip the artifact after download????????????????
+
+          tar -cf "yttm-nightly-${{ matrix.name }}.zip.tar" "yttm-nightly-${{ matrix.name }}.zip"
+          Remove-Item "yttm-nightly-${{ matrix.name }}.zip"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
@@ -106,11 +112,19 @@ jobs:
           echo "Downloaded files:"
           find artifacts -type f -print || true
 
+          # Look at this horrible thing
+          while IFS= read -r -d '' f; do
+            tar -xf "$f" -C "$(dirname "$f")"
+            rm -f "$f"
+          done < <(find artifacts -type f -name '*.zip.tar' -print0)
+
           mapfile -t assets < <(find artifacts -type f \( -name 'yttm-nightly-*.tar.gz' -o -name 'yttm-nightly-*.zip' \) | sort)
           if [ "${#assets[@]}" -eq 0 ]; then
             echo "No release assets found."
             exit 1
           fi
+
+          printnf 'Release assets:\n%s\n' "${assets[@]}"
 
           TAG="nightly"
           TITLE="Nightly ($(date -u +'%Y-%m-%d'))"
