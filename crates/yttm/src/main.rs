@@ -1,7 +1,8 @@
 use gpui_kit::assets::IconName;
 use gpui_kit::base::resizable_panel;
 use gpui_kit::component::button::*;
-use gpui_kit::component::{ActiveTheme as _, h_resizable, v_resizable};
+use gpui_kit::component::theme::*;
+use gpui_kit::component::{h_resizable, v_resizable};
 use gpui_kit::*;
 
 mod app;
@@ -63,6 +64,13 @@ impl YttmApp {
             WorkspaceLayout::Stacked => ("Switch to Side by side", IconName::PanelBottom),
             WorkspaceLayout::SideBySide => ("Switch to Stacked", IconName::PanelRight),
         };
+
+        let (theme_tooltip, theme_icon) = if cx.theme().mode.is_dark() {
+            ("Switch to light theme", IconName::Moon)
+        } else {
+            ("Switch to dark theme", IconName::Sun)
+        };
+
         div()
             .flex()
             .items_center()
@@ -90,6 +98,15 @@ impl YttmApp {
                             .ghost()
                             .tooltip("Save")
                             .on_click(|_, _, _| {}),
+                    )
+                    .child(
+                        Button::new("toggle-theme")
+                            .icon(theme_icon)
+                            .ghost()
+                            .tooltip(theme_tooltip)
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                this.toggle_theme(cx);
+                            })),
                     )
                     .child(
                         Button::new("toggle-layout")
