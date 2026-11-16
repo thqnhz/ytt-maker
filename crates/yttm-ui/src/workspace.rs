@@ -1,9 +1,21 @@
 use gpui_kit::assets::IconName;
+use gpui_kit::base::ResizableState;
+use gpui_kit::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum WorkspaceLayout {
     Stacked,
     SideBySide,
+}
+
+pub(crate) struct WorkspaceSplit {
+    pub stacked: Entity<ResizableState>,
+    pub side_by_side: Entity<ResizableState>,
+}
+
+pub(crate) struct Workspace {
+    pub layout: WorkspaceLayout,
+    pub split: WorkspaceSplit,
 }
 
 pub(crate) fn layout_tooltip(l: WorkspaceLayout) -> String {

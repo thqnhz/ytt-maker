@@ -5,8 +5,8 @@ use gpui_kit::component::input::{InputEvent, InputState};
 use gpui_kit::component::*;
 use gpui_kit::*;
 
-use crate::layout::WorkspaceLayout;
 use crate::theme::YttmTheme;
+use crate::workspace::{Workspace, WorkspaceLayout, WorkspaceSplit};
 use yttm_core::{Cue, Document};
 use yttm_input::YttmInput;
 
@@ -14,9 +14,7 @@ pub struct YttmApp {
     pub document: Document,
     pub selected_cue: Option<u64>,
     next_cue_id: u64,
-    pub workspace_layout: WorkspaceLayout,
-    pub stacked_split: Entity<ResizableState>,
-    pub side_split: Entity<ResizableState>,
+    pub workspace: Workspace,
     pub theme: YttmTheme,
     pub input: YttmInput,
 }
@@ -42,9 +40,13 @@ impl YttmApp {
             document: Document { cues: Vec::new() },
             selected_cue: None,
             next_cue_id: 1,
-            workspace_layout: WorkspaceLayout::Stacked,
-            stacked_split: cx.new(|_| ResizableState::default()),
-            side_split: cx.new(|_| ResizableState::default()),
+            workspace: Workspace {
+                layout: WorkspaceLayout::Stacked,
+                split: WorkspaceSplit {
+                    stacked: cx.new(|_| ResizableState::default()),
+                    side_by_side: cx.new(|_| ResizableState::default()),
+                },
+            },
             theme: YttmTheme::new(),
             input: YttmInput {
                 subtitle: subtitle_input,

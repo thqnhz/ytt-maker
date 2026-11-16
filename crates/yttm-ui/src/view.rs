@@ -8,7 +8,7 @@ use gpui_kit::*;
 
 use crate::app::YttmApp;
 use crate::cue_editor;
-use crate::layout::*;
+use crate::workspace::*;
 
 fn no_hairline_resize_appearance() -> ResizeHandleRenderer {
     Rc::new(|handle, _window, cx| {
@@ -54,9 +54,9 @@ fn no_hairline_resize_appearance() -> ResizeHandleRenderer {
 
 impl Render for YttmApp {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let workspace = match self.workspace_layout {
+        let workspace = match self.workspace.layout {
             WorkspaceLayout::Stacked => v_resizable("main-split-stacked")
-                .with_state(&self.stacked_split)
+                .with_state(&self.workspace.split.stacked)
                 .with_handle_appearance(no_hairline_resize_appearance())
                 .child(
                     resizable_panel().size(px(400.)).child(
@@ -79,7 +79,7 @@ impl Render for YttmApp {
                     ),
                 )),
             WorkspaceLayout::SideBySide => h_resizable("main-split-side")
-                .with_state(&self.side_split)
+                .with_state(&self.workspace.split.side_by_side)
                 .with_handle_appearance(no_hairline_resize_appearance())
                 .child(
                     resizable_panel().size(px(480.)).child(
@@ -168,11 +168,11 @@ impl YttmApp {
                     )
                     .child(
                         Button::new("toggle-layout")
-                            .icon(layout_icon(self.workspace_layout))
+                            .icon(layout_icon(self.workspace.layout))
                             .ghost()
-                            .tooltip(layout_tooltip(self.workspace_layout))
+                            .tooltip(layout_tooltip(self.workspace.layout))
                             .on_click(cx.listener(|this, _, _, cx| {
-                                this.workspace_layout = match this.workspace_layout {
+                                this.workspace.layout = match this.workspace.layout {
                                     WorkspaceLayout::Stacked => WorkspaceLayout::SideBySide,
                                     WorkspaceLayout::SideBySide => WorkspaceLayout::Stacked,
                                 };
