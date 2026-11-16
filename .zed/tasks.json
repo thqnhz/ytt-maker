@@ -1,0 +1,16 @@
+[
+    {
+        "label": "dev",
+        "command": "cargo",
+        "args": ["run"],
+        "allow_concurrent_runs": true,
+        "use_new_terminal": false,
+    },
+    {
+        "label": "clippy",
+        "command": "cargo",
+        "args": ["clippy"],
+        "allow_concurrent_runs": true,
+        "use_new_terminal": false,
+    },
+]
