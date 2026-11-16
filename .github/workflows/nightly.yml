@@ -89,13 +89,12 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
-      
+
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
           pattern: nightly-*
           path: artifacts
-          merge-multiple: true
 
       - name: Publish rolling nightly release
         env:
@@ -103,6 +102,16 @@ jobs:
         shell: bash
         run: |
           set -eou pipefail
+
+          echo "Downloaded files:"
+          find artifacts -type f -print || true
+
+          mapfile -t assets < <(find artifacts -type f \( -name 'yttm-nightly-*.tar.gz' -o -name 'yttm-nightly-*.zip' \) | sort)
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "No release assets found."
+            exit 1
+          fi
+
           TAG="nightly"
           TITLE="Nightly ($(date -u +'%Y-%m-%d'))"
           SHA="${GITHUB_SHA}"
@@ -114,11 +123,13 @@ jobs:
           # Move the nightly tag to the current commit
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git tag -fa "$TAG" -m "$TITLE"
           git push -f origin "refs/tags/$TAG"
 
           # Create prerelease
-          gh release create "$TAG" artifacts/* \
+          gh release create "$TAG" "${assets[@]}" \
+            --target "$SHA" \
             --prerelease \
             --title "$TITLE" \
             --notes "$BODY" \
