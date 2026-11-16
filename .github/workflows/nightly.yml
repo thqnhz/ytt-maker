@@ -124,7 +124,7 @@ jobs:
             exit 1
           fi
 
-          printnf 'Release assets:\n%s\n' "${assets[@]}"
+          printf 'Release assets:\n%s\n' "${assets[@]}"
 
           TAG="nightly"
           TITLE="Nightly ($(date -u +'%Y-%m-%d'))"
