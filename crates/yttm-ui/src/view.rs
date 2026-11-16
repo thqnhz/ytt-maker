@@ -70,12 +70,7 @@ impl Render for YttmApp {
                 )
                 .child(resizable_panel().child(
                     div().size_full().flex().flex_col().pt(px(4.)).child(
-                        cue_editor::render_editor_area(
-                            &self.document.cues,
-                            self.selected_cue,
-                            &self.input.subtitle,
-                            cx,
-                        ),
+                        cue_editor::render_editor_area(&self.document, &self.input.subtitle, cx),
                     ),
                 )),
             WorkspaceLayout::SideBySide => h_resizable("main-split-side")
@@ -92,12 +87,7 @@ impl Render for YttmApp {
                 )
                 .child(
                     resizable_panel().child(div().size_full().flex().pl(px(4.)).child(
-                        cue_editor::render_editor_area(
-                            &self.document.cues,
-                            self.selected_cue,
-                            &self.input.subtitle,
-                            cx,
-                        ),
+                        cue_editor::render_editor_area(&self.document, &self.input.subtitle, cx),
                     )),
                 ),
         };
@@ -123,11 +113,11 @@ impl Render for YttmApp {
 
 impl YttmApp {
     fn render_top_bar(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let (theme_tooltip, theme_icon) = if cx.theme().mode.is_dark() {
-            ("Switch to light theme", IconName::Moon)
-        } else {
-            ("Switch to dark theme", IconName::Sun)
-        };
+        let is_dark = cx.theme().mode.is_dark();
+        let theme_tooltip = self.theme.tooltip(is_dark);
+        let theme_icon = self.theme.icon(is_dark);
+        let layout_tooltip = Workspace::layout_tooltip(self.workspace.layout);
+        let layout_icon = Workspace::layout_icon(self.workspace.layout);
 
         div()
             .flex()
@@ -168,14 +158,11 @@ impl YttmApp {
                     )
                     .child(
                         Button::new("toggle-layout")
-                            .icon(layout_icon(self.workspace.layout))
+                            .icon(layout_icon)
                             .ghost()
-                            .tooltip(layout_tooltip(self.workspace.layout))
+                            .tooltip(layout_tooltip)
                             .on_click(cx.listener(|this, _, _, cx| {
-                                this.workspace.layout = match this.workspace.layout {
-                                    WorkspaceLayout::Stacked => WorkspaceLayout::SideBySide,
-                                    WorkspaceLayout::SideBySide => WorkspaceLayout::Stacked,
-                                };
+                                this.workspace.switch_layout();
                                 cx.notify();
                             })),
                     ),

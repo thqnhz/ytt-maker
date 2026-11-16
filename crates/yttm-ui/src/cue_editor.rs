@@ -6,17 +6,19 @@ use gpui_kit::component::*;
 use gpui_kit::*;
 
 use yttm_core::Cue;
+use yttm_core::Document;
 
 use crate::app::YttmApp;
 use crate::format::*;
 
 pub fn render_editor_area(
-    cues: &[Cue],
-    selected_cue: Option<u64>,
+    document: &Document,
     subtitle_input: &Entity<InputState>,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
-    let selected = selected_cue.and_then(|id| cues.iter().find(|cue| cue.id == id));
+    let selected = document
+        .selected_cue
+        .and_then(|id| document.cues.iter().find(|cue| cue.id == id));
     div()
         .id("cue-editor-area")
         .flex()
@@ -53,7 +55,7 @@ pub fn render_editor_area(
                         .icon(IconName::ArrowUp)
                         .ghost()
                         .tooltip("Add cue above selection")
-                        .disabled(selected_cue.is_none())
+                        .disabled(document.selected_cue.is_none())
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.add_cue_above_selected();
                             this.sync_subtitle_input(window, cx);
@@ -65,7 +67,7 @@ pub fn render_editor_area(
                         .icon(IconName::ArrowDown)
                         .ghost()
                         .tooltip("Add cue below selection")
-                        .disabled(selected_cue.is_none())
+                        .disabled(document.selected_cue.is_none())
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.add_cue_below_selected();
                             this.sync_subtitle_input(window, cx);
@@ -77,7 +79,7 @@ pub fn render_editor_area(
                         .icon(IconName::Minus)
                         .ghost()
                         .tooltip("Delete selected cue")
-                        .disabled(selected_cue.is_none())
+                        .disabled(document.selected_cue.is_none())
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.delete_selected_cue();
                             this.sync_subtitle_input(window, cx);
@@ -85,15 +87,11 @@ pub fn render_editor_area(
                         })),
                 ),
         )
-        .child(render_cue_table(cues, selected_cue, cx))
+        .child(render_cue_table(document, cx))
         .child(render_selected_details(selected, subtitle_input, cx))
 }
 
-fn render_cue_table(
-    cues: &[Cue],
-    selected_cue: Option<u64>,
-    cx: &Context<YttmApp>,
-) -> impl IntoElement {
+fn render_cue_table(document: &Document, cx: &Context<YttmApp>) -> impl IntoElement {
     div()
         .flex()
         .flex_col()
@@ -108,7 +106,12 @@ fn render_cue_table(
                 .flex_1()
                 .min_h_0()
                 .overflow_y_scroll()
-                .children(cues.iter().map(|cue| render_cue_row(cue, selected_cue, cx))),
+                .children(
+                    document
+                        .cues
+                        .iter()
+                        .map(|cue| render_cue_row(cue, document.selected_cue, cx)),
+                ),
         )
 }
 
@@ -155,7 +158,7 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
     }
 
     row.on_click(cx.listener(move |this, _, window, cx| {
-        this.selected_cue = Some(cue_id);
+        this.document.selected_cue = Some(cue_id);
         this.sync_subtitle_input(window, cx);
         cx.notify();
     }))

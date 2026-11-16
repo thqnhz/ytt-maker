@@ -73,6 +73,19 @@ impl YttmTheme {
         })
         .detach();
     }
+
+    pub fn tooltip(self, dark: bool) -> String {
+        if dark {
+            "Switch to light theme"
+        } else {
+            "Switch to dark theme"
+        }
+        .to_owned()
+    }
+
+    pub fn icon(self, dark: bool) -> IconName {
+        if dark { IconName::Moon } else { IconName::Sun }
+    }
 }
 
 fn ease_in_out_cubic(t: f32) -> f32 {

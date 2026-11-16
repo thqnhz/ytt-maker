@@ -11,4 +11,5 @@ pub struct Cue {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Document {
     pub cues: Vec<Cue>,
+    pub selected_cue: Option<u64>,
 }

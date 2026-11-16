@@ -12,11 +12,10 @@ use yttm_input::YttmInput;
 
 pub struct YttmApp {
     pub document: Document,
-    pub selected_cue: Option<u64>,
-    next_cue_id: u64,
     pub workspace: Workspace,
     pub theme: YttmTheme,
     pub input: YttmInput,
+    next_cue_id: u64,
 }
 
 impl YttmApp {
@@ -25,7 +24,7 @@ impl YttmApp {
 
         cx.subscribe(&subtitle_input, |this, state, event: &InputEvent, cx| {
             if matches!(event, InputEvent::Change)
-                && let Some(id) = this.selected_cue
+                && let Some(id) = this.document.selected_cue
             {
                 let text = state.read(cx).value().to_string();
                 if let Some(cue) = this.document.cues.iter_mut().find(|cue| cue.id == id) {
@@ -37,8 +36,10 @@ impl YttmApp {
         .detach();
 
         Self {
-            document: Document { cues: Vec::new() },
-            selected_cue: None,
+            document: Document {
+                cues: Vec::new(),
+                selected_cue: None,
+            },
             next_cue_id: 1,
             workspace: Workspace {
                 layout: WorkspaceLayout::Stacked,
@@ -56,6 +57,7 @@ impl YttmApp {
 
     pub fn sync_subtitle_input(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let text = self
+            .document
             .selected_cue
             .and_then(|id| self.document.cues.iter().find(|cue| cue.id == id))
             .map(|cue| cue.text.clone())
@@ -92,17 +94,17 @@ impl YttmApp {
     }
 
     pub fn delete_selected_cue(&mut self) {
-        let Some(selected_id) = self.selected_cue else {
+        let Some(selected_id) = self.document.selected_cue else {
             return;
         };
         let Some(ix) = self.selected_index() else {
-            self.selected_cue = None;
+            self.document.selected_cue = None;
             return;
         };
 
         self.document.cues.remove(ix);
 
-        self.selected_cue = if self.document.cues.is_empty() {
+        self.document.selected_cue = if self.document.cues.is_empty() {
             // Empty -> Unselect
             None
         } else if ix == 0 {
@@ -156,7 +158,7 @@ impl YttmApp {
             pos_y: None,
         });
         self.sort_cues();
-        self.selected_cue = Some(id);
+        self.document.selected_cue = Some(id);
     }
 
     fn sort_cues(&mut self) {
@@ -164,12 +166,12 @@ impl YttmApp {
     }
 
     fn selected_cue(&self) -> Option<&Cue> {
-        let id = self.selected_cue?;
+        let id = self.document.selected_cue?;
         self.document.cues.iter().find(|cue| cue.id == id)
     }
 
     fn selected_index(&self) -> Option<usize> {
-        let id = self.selected_cue?;
+        let id = self.document.selected_cue?;
         self.document.cues.iter().position(|cue| cue.id == id)
     }
 }
