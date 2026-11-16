@@ -70,7 +70,12 @@ impl Render for YttmApp {
                 )
                 .child(resizable_panel().child(
                     div().size_full().flex().flex_col().pt(px(4.)).child(
-                        cue_editor::render_editor_area(&self.document, &self.input.subtitle, cx),
+                        cue_editor::render_editor_area(
+                            &self.document.cues,
+                            self.selected_cue,
+                            &self.input.subtitle,
+                            cx,
+                        ),
                     ),
                 )),
             WorkspaceLayout::SideBySide => h_resizable("main-split-side")
@@ -87,7 +92,12 @@ impl Render for YttmApp {
                 )
                 .child(
                     resizable_panel().child(div().size_full().flex().pl(px(4.)).child(
-                        cue_editor::render_editor_area(&self.document, &self.input.subtitle, cx),
+                        cue_editor::render_editor_area(
+                            &self.document.cues,
+                            self.selected_cue,
+                            &self.input.subtitle,
+                            cx,
+                        ),
                     )),
                 ),
         };
