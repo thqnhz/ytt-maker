@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use gpui_kit::base::ResizableState;
 use gpui_kit::component::*;
+use gpui_kit::component::input::{InputState, InputEvent};
 use gpui_kit::*;
 
 use yttm_core::{Cue, Document};
@@ -22,12 +23,27 @@ pub struct YttmApp {
     pub side_split: Entity<ResizableState>,
     theme_transition_generation: usize,
     pub theme_target_mode: Option<ThemeMode>,
+    pub subtitle_input: Entity<InputState>,
 }
 
 impl YttmApp {
-    pub fn new(_window: &mut Window, cx: &mut Context<Self>) -> Self {
+    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let mut next_cue_id = 1;
         let cues = sample_cues(&mut next_cue_id);
+
+        let subtitle_input = cx.new(|cx| InputState::new(window, cx).placeholder("Subtitle text"));
+
+        cx.subscribe(&subtitle_input, |this, state, event: &InputEvent, cx| {
+            if matches!(event, InputEvent::Change) && let Some(id) = this.selected_cue {
+                    let text = state.read(cx).value().to_string();
+                    if let Some(cue) = this.document.cues.iter_mut().find(|cue| cue.id == id) {
+                        cue.text = text;
+                        cx.notify();
+                    }
+                }
+        })
+        .detach();
+
         Self {
             document: Document { cues },
             selected_cue: None,
@@ -37,7 +53,19 @@ impl YttmApp {
             side_split: cx.new(|_| ResizableState::default()),
             theme_transition_generation: 0,
             theme_target_mode: None,
+            subtitle_input,
         }
+    }
+
+    pub fn sync_subtitle_input(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let text = self.selected_cue
+            .and_then(|id| self.document.cues.iter().find(|cue| cue.id == id))
+            .map(|cue| cue.text.clone())
+            .unwrap_or_default();
+
+        self.subtitle_input.update(cx, |input, cx| {
+            input.set_value(text, window, cx);
+        })
     }
 
     pub fn toggle_theme(&mut self, cx: &mut Context<Self>) {

@@ -1,6 +1,7 @@
 use gpui_kit::assets::IconName;
 use gpui_kit::component::ActiveTheme as _;
 use gpui_kit::component::button::*;
+use gpui_kit::component::input::{Input, InputState};
 use gpui_kit::component::*;
 use gpui_kit::*;
 
@@ -11,6 +12,7 @@ use crate::app::YttmApp;
 pub fn render_editor_area(
     cues: &[Cue],
     selected_cue: Option<u64>,
+    subtitle_input: &Entity<InputState>,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
     let selected = selected_cue.and_then(|id| cues.iter().find(|cue| cue.id == id));
@@ -39,8 +41,9 @@ pub fn render_editor_area(
                         .icon(IconName::Plus)
                         .ghost()
                         .tooltip("Add cue")
-                        .on_click(cx.listener(|this, _, _, cx| {
+                        .on_click(cx.listener(|this, _, window, cx| {
                             this.append_cue();
+                            this.sync_subtitle_input(window, cx);
                             cx.notify();
                         })),
                 )
@@ -50,8 +53,9 @@ pub fn render_editor_area(
                         .ghost()
                         .tooltip("Add cue above selection")
                         .disabled(selected_cue.is_none())
-                        .on_click(cx.listener(|this, _, _, cx| {
+                        .on_click(cx.listener(|this, _, window, cx| {
                             this.add_cue_above_selected();
+                            this.sync_subtitle_input(window, cx);
                             cx.notify();
                         })),
                 )
@@ -61,8 +65,9 @@ pub fn render_editor_area(
                         .ghost()
                         .tooltip("Add cue below selection")
                         .disabled(selected_cue.is_none())
-                        .on_click(cx.listener(|this, _, _, cx| {
+                        .on_click(cx.listener(|this, _, window, cx| {
                             this.add_cue_below_selected();
+                            this.sync_subtitle_input(window, cx);
                             cx.notify();
                         })),
                 )
@@ -72,14 +77,15 @@ pub fn render_editor_area(
                         .ghost()
                         .tooltip("Delete selected cue")
                         .disabled(selected_cue.is_none())
-                        .on_click(cx.listener(|this, _, _, cx| {
+                        .on_click(cx.listener(|this, _, window, cx| {
                             this.delete_selected_cue();
+                            this.sync_subtitle_input(window, cx);
                             cx.notify();
                         })),
                 ),
         )
         .child(render_cue_table(cues, selected_cue, cx))
-        .child(render_selected_details(selected, cx))
+        .child(render_selected_details(selected, subtitle_input, cx))
 }
 
 fn render_cue_table(
@@ -147,8 +153,9 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
         subtitle = subtitle.child(cue.text.clone());
     }
 
-    row.on_click(cx.listener(move |this, _, _, cx| {
+    row.on_click(cx.listener(move |this, _, window, cx| {
         this.selected_cue = Some(cue_id);
+        this.sync_subtitle_input(window, cx);
         cx.notify();
     }))
     .child(div().w_24().child(format_ms(cue.start_ms)))
@@ -158,7 +165,11 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
     .child(div().w_16().child(format_opt_i32(cue.pos_y)))
 }
 
-fn render_selected_details(selected: Option<&Cue>, cx: &Context<YttmApp>) -> impl IntoElement {
+fn render_selected_details(
+    selected: Option<&Cue>,
+    subtitle_input: &Entity<InputState>,
+    cx: &Context<YttmApp>
+) -> impl IntoElement {
     let mut details = div()
         .id("cue-detail")
         .flex()
@@ -171,15 +182,6 @@ fn render_selected_details(selected: Option<&Cue>, cx: &Context<YttmApp>) -> imp
         .border_color(cx.theme().border);
 
     if let Some(cue) = selected {
-        let mut subtitle = div();
-        if cue.text.is_empty() {
-            subtitle = subtitle
-                .text_color(cx.theme().muted_foreground)
-                .child("(empty)");
-        } else {
-            subtitle = subtitle.child(cue.text.clone())
-        }
-
         details = details
             .child(
                 div()
@@ -198,9 +200,9 @@ fn render_selected_details(selected: Option<&Cue>, cx: &Context<YttmApp>) -> imp
                         "Pos X: {} Pos Y: {}",
                         format_opt_i32(cue.pos_x),
                         format_opt_i32(cue.pos_y),
-                    )),
+                    ))
             )
-            .child(subtitle);
+            .child(Input::new(subtitle_input));
     } else {
         details = details.child(
             div()
@@ -208,7 +210,6 @@ fn render_selected_details(selected: Option<&Cue>, cx: &Context<YttmApp>) -> imp
                 .child("No cue selected"),
         );
     }
-
     details
 }
 
