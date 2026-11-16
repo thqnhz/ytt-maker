@@ -2,6 +2,9 @@
 
 A tool to edit YouTube subtitle, written in Rust using GPUI.
 
+> [!NOTE]
+> The project is still in work in progress stage
+
 Have you ever watched some music video with subtitle and are surprised that the
 subtitle can have special color/background and/or can move freely on the screen?
 
