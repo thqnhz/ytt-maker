@@ -83,7 +83,7 @@ jobs:
           name: nightly-${{ matrix.name }}
           path: |
             yttm-nightly-${{ matrix.name }}.tar.gz
-            yttm-nightly-${{ matrix.name }}.zip
+            yttm-nightly-${{ matrix.name }}.zip.tar
           archive: false # already compressed
           if-no-files-found: error
 
