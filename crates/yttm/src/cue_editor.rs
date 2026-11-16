@@ -18,7 +18,7 @@ pub fn render_editor_area(
         .id("cue-editor-area")
         .flex()
         .flex_col()
-        .size_full()
+        .flex_1()
         .min_h_0()
         .rounded(cx.theme().radius)
         .border_1()

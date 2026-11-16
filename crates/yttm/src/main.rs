@@ -1,5 +1,7 @@
+use std::rc::Rc;
+
 use gpui_kit::assets::IconName;
-use gpui_kit::base::resizable_panel;
+use gpui_kit::base::{resizable_panel, ResizeHandleRenderer, ResizeHandleState};
 use gpui_kit::component::button::*;
 use gpui_kit::component::theme::*;
 use gpui_kit::component::{h_resizable, v_resizable};
@@ -10,33 +12,86 @@ mod cue_editor;
 
 use crate::app::{WorkspaceLayout, YttmApp};
 
+fn no_hairline_resize_appearance() -> ResizeHandleRenderer {
+    Rc::new(|handle, _window, cx| {
+        let (length, opacity) = match handle.state() {
+            ResizeHandleState::Idle => (px(0.), 0.0_f32),
+            ResizeHandleState::Hovered => (px(30.), 0.35),
+            ResizeHandleState::Pressed => (px(40.), 0.6),
+            ResizeHandleState::Dragging => (px(52.), 0.9),
+        };
+
+        let mut line = div().flex_none().flex().bg(transparent_black());
+
+        line = match handle.axis() {
+            Axis::Horizontal => line.w(px(1.)).h_full().items_center(),
+            Axis::Vertical => line.h(px(1.)).w_full().items_start().justify_center(),
+        };
+
+        if length > px(0.5) {
+            let pill = match handle.axis() {
+                Axis::Horizontal => div()
+                    .flex_none()
+                    .rounded(cx.theme().radius_full())
+                    .bg(cx.theme().muted_foreground)
+                    .opacity(opacity)
+                    .w(px(4.))
+                    .h(length)
+                    .ml(px(4.) * -0.5),
+                Axis::Vertical => div()
+                    .flex_none()
+                    .rounded(cx.theme().radius_full())
+                    .bg(cx.theme().muted_foreground)
+                    .opacity(opacity)
+                    .h(px(4.))
+                    .w(length)
+                    .mt(px(4.) * -0.5),
+            };
+            line = line.child(pill);
+        }
+
+        Some(line.into_any_element())
+    })
+}
+
 impl Render for YttmApp {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let workspace = match self.workspace_layout {
             WorkspaceLayout::Stacked => v_resizable("main-split-stacked")
                 .with_state(&self.stacked_split)
+                .with_handle_appearance(no_hairline_resize_appearance())
                 .child(
-                    resizable_panel()
-                        .size(px(400.))
-                        .child(self.render_video_area(cx)),
+                    resizable_panel().size(px(400.)).child(
+                        div()
+                            .size_full()
+                            .flex()
+                            .flex_col()
+                            .pb(px(4.))
+                            .child(self.render_video_area(cx)),
+                    ),
                 )
-                .child(resizable_panel().child(cue_editor::render_editor_area(
-                    &self.document.cues,
-                    self.selected_cue,
-                    cx,
-                ))),
+                .child(resizable_panel().child(
+                    div().size_full().flex().flex_col().pt(px(4.)).child(
+                        cue_editor::render_editor_area(&self.document.cues, self.selected_cue, cx),
+                    ),
+                )),
             WorkspaceLayout::SideBySide => h_resizable("main-split-side")
                 .with_state(&self.side_split)
+                .with_handle_appearance(no_hairline_resize_appearance())
                 .child(
-                    resizable_panel()
-                        .size(px(480.))
-                        .child(self.render_video_area(cx)),
+                    resizable_panel().size(px(480.)).child(
+                        div()
+                            .size_full()
+                            .flex()
+                            .pr(px(4.))
+                            .child(self.render_video_area(cx)),
+                    ),
                 )
-                .child(resizable_panel().child(cue_editor::render_editor_area(
-                    &self.document.cues,
-                    self.selected_cue,
-                    cx,
-                ))),
+                .child(
+                    resizable_panel().child(div().size_full().flex().pl(px(4.)).child(
+                        cue_editor::render_editor_area(&self.document.cues, self.selected_cue, cx),
+                    )),
+                ),
         };
         div()
             .size_full()
@@ -129,8 +184,9 @@ impl YttmApp {
             .id("video-area")
             .flex()
             .flex_col()
-            .size_full()
+            .flex_1()
             .min_h_0()
+            .min_w_0()
             .items_center()
             .justify_center()
             .gap_1()
