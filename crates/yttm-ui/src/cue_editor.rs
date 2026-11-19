@@ -1,7 +1,7 @@
 use gpui_kit::assets::IconName;
 use gpui_kit::component::ActiveTheme as _;
 use gpui_kit::component::button::*;
-use gpui_kit::component::input::{Enter, Escape, Input};
+use gpui_kit::component::input::{Enter, Escape, Input, Textarea};
 use gpui_kit::component::*;
 use gpui_kit::*;
 
@@ -138,7 +138,7 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
         .flex()
         .items_center()
         .px_3()
-        .h_8()
+        .min_h_8()
         .border_b_1()
         .border_color(cx.theme().border);
 
@@ -152,7 +152,7 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
             .text_color(cx.theme().muted_foreground)
             .child("(empty)")
     } else {
-        subtitle = subtitle.child(cue.text.clone());
+        subtitle = subtitle.flex().flex_col().child(cue.text.clone());
     }
 
     row.on_click(cx.listener(move |this, _, window, cx| {
@@ -321,11 +321,47 @@ fn end_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement 
 fn render_subtitle_field(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
     div()
         .w_full()
-        .on_action(cx.listener(|_, _: &Enter, window, cx| {
-            window.blur(cx);
-        }))
-        .on_action(cx.listener(|_, _: &Escape, window, cx| {
-            window.blur(cx);
-        }))
-        .child(Input::new(&input.subtitle))
+        .flex()
+        .items_start()
+        .gap_1()
+        .child(
+            div()
+                .flex_1()
+                .min_w_0()
+                .child(Textarea::new(&input.subtitle)),
+        )
+        .child(
+            div()
+                .flex()
+                .gap_2()
+                .child(
+                    Button::new("revert-subtitle")
+                        .icon(IconName::Close)
+                        .ghost()
+                        .text_color(cx.theme().danger)
+                        .tooltip("Revert subtitle")
+                        .on_click(cx.listener(|this, _, window, cx| {
+                            this.sync_selected_cue_inputs(window, cx);
+                            window.blur(cx);
+                            cx.notify();
+                        })),
+                )
+                .child(
+                    Button::new("commit-subtitle")
+                        .icon(IconName::Check)
+                        .ghost()
+                        .text_color(cx.theme().success)
+                        .tooltip("Commit subtitle")
+                        .on_click(cx.listener(|this, _, window, cx| {
+                            if let Some(id) = this.selected_cue
+                                && let Some(cue) =
+                                    this.document.cues.iter_mut().find(|c| c.id == id)
+                            {
+                                cue.text = this.input.subtitle.read(cx).value().to_string();
+                                cx.notify();
+                            }
+                            window.blur(cx);
+                        })),
+                ),
+        )
 }

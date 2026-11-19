@@ -11,7 +11,7 @@ pub struct SelectedCueValues {
 }
 
 pub struct YttmInput {
-    pub subtitle: Entity<InputState>,
+    pub subtitle: Entity<TextareaState>,
     pub start: Entity<InputState>,
     pub end: Entity<InputState>,
     pub pos_x: Entity<InputState>,
@@ -21,7 +21,11 @@ pub struct YttmInput {
 impl YttmInput {
     pub fn new<V: 'static>(window: &mut Window, cx: &mut Context<V>) -> Self {
         Self {
-            subtitle: cx.new(|cx| InputState::new(window, cx).placeholder("Subtitle text")),
+            subtitle: cx.new(|cx| {
+                TextareaState::new(window, cx)
+                    .placeholder("Subtitle text")
+                    .auto_grow(1, 3)
+            }),
             start: cx.new(|cx| InputState::new(window, cx).placeholder("00:00.000")),
             end: cx.new(|cx| InputState::new(window, cx).placeholder("00:00.000")),
             pos_x: cx.new(|cx| InputState::new(window, cx).placeholder("-")),

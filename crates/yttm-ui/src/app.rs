@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
 use gpui_kit::base::ResizableState;
-use gpui_kit::component::input::InputEvent;
 use gpui_kit::component::*;
 use gpui_kit::*;
 
@@ -22,19 +21,6 @@ pub struct YttmApp {
 impl YttmApp {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let input = YttmInput::new(window, cx);
-
-        cx.subscribe(&input.subtitle, |this, state, event: &InputEvent, cx| {
-            if matches!(event, InputEvent::Change)
-                && let Some(id) = this.selected_cue
-            {
-                let text = state.read(cx).value().to_string();
-                if let Some(cue) = this.document.cues.iter_mut().find(|cue| cue.id == id) {
-                    cue.text = text;
-                    cx.notify();
-                }
-            }
-        })
-        .detach();
 
         Self {
             document: Document { cues: Vec::new() },
