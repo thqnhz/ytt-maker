@@ -26,6 +26,12 @@ This list is not exhausted
     - [ ] Add subtitle button to add at the current video position
     - [x] Add subtitle button to add at the end of the list
     - [x] Add blank row above/below
+    - [x] Pin the selected editor down so it's clear which one is being edited
+    - [ ] Keybind
+        - [x] `Enter`/`Esc` to save current edit
+        - [ ] `Enter` to edit selected entry
+- [ ] UI
+    - [x] Dark mode
 - [ ] .YTT format
     - [ ] Import
         - [ ] Import from different formats?
