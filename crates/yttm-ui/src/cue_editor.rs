@@ -196,7 +196,6 @@ fn render_selected_details(
         );
     }
     details
-
 }
 
 fn render_cue_meta(cue: &Cue, cx: &Context<YttmApp>) -> impl IntoElement {
@@ -243,7 +242,9 @@ fn start_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElemen
         .on_action(cx.listener(|this, _: &Enter, window, cx| {
             if let Some(id) = this.selected_cue {
                 let value = this.input.start.read(cx).value().to_string();
-                if let Some(ms) = parse_ms(&value) && let Some(cue) = this.document.cues.iter_mut().find(|c| c.id == id) {
+                if let Some(ms) = yttm_input::parse_ms(&value)
+                    && let Some(cue) = this.document.cues.iter_mut().find(|c| c.id == id)
+                {
                     cue.start_ms = ms;
                     this.sort_cues();
                 }
@@ -264,7 +265,9 @@ fn end_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement 
         .on_action(cx.listener(|this, _: &Enter, window, cx| {
             if let Some(id) = this.selected_cue {
                 let value = this.input.end.read(cx).value().to_string();
-                if let Some(ms) = parse_ms(&value) && let Some(cue) = this.document.cues.iter_mut().find(|c| c.id == id) {
+                if let Some(ms) = yttm_input::parse_ms(&value)
+                    && let Some(cue) = this.document.cues.iter_mut().find(|c| c.id == id)
+                {
                     cue.end_ms = ms;
                 }
             }

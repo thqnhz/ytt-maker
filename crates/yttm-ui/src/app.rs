@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use gpui_kit::base::ResizableState;
-use gpui_kit::component::input::{InputEvent, InputState};
+use gpui_kit::component::input::InputEvent;
 use gpui_kit::component::*;
 use gpui_kit::*;
 
@@ -21,11 +21,9 @@ pub struct YttmApp {
 
 impl YttmApp {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let subtitle_input = cx.new(|cx| InputState::new(window, cx).placeholder("Subtitle text"));
-        let start_input = cx.new(|cx| InputState::new(window, cx).placeholder("00:00.000"));
-        let end_input = cx.new(|cx| InputState::new(window, cx).placeholder("00:00.000"));
+        let input = YttmInput::new(window, cx);
 
-        cx.subscribe(&subtitle_input, |this, state, event: &InputEvent, cx| {
+        cx.subscribe(&input.subtitle, |this, state, event: &InputEvent, cx| {
             if matches!(event, InputEvent::Change)
                 && let Some(id) = this.selected_cue
             {
@@ -50,11 +48,7 @@ impl YttmApp {
                 },
             },
             theme: YttmTheme::new(),
-            input: YttmInput {
-                subtitle: subtitle_input,
-                start: start_input,
-                end: end_input,
-            },
+            input,
         }
     }
 
@@ -71,15 +65,7 @@ impl YttmApp {
             })
             .unwrap_or_default();
 
-        self.input.subtitle.update(cx, |input, cx| {
-            input.set_value(subtitle, window, cx);
-        });
-        self.input.start.update(cx, |input, cx| {
-            input.set_value(start, window, cx);
-        });
-        self.input.end.update(cx, |input, cx| {
-            input.set_value(end, window, cx);
-        });
+        self.input.sync_selected(subtitle, start, end, window, cx);
     }
 
     /// Append a cue entry at the end
