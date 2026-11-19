@@ -74,6 +74,18 @@ pub fn render_editor_area(
                         })),
                 )
                 .child(
+                    Button::new("duplicate-cue")
+                        .icon(IconName::Copy)
+                        .ghost()
+                        .tooltip("Duplicate selected cue")
+                        .disabled(selected_cue.is_none())
+                        .on_click(cx.listener(|this, _, window, cx| {
+                            this.duplicate_selected_cue();
+                            this.sync_selected_cue_inputs(window, cx);
+                            cx.notify();
+                        })),
+                )
+                .child(
                     Button::new("delete-cue")
                         .icon(IconName::Minus)
                         .ghost()

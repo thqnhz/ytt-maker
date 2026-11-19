@@ -79,6 +79,35 @@ impl YttmApp {
         self.insert_cue(start_ms, start_ms + 2_000);
     }
 
+    pub fn duplicate_selected_cue(&mut self) {
+        let Some(id) = self.selected_cue else {
+            return;
+        };
+        let Some(cue) = self.document.cues.iter().find(|c| c.id == id) else {
+            return;
+        };
+
+        let text = cue.text.clone();
+        let pos_x = cue.pos_x;
+        let pos_y = cue.pos_y;
+        let start_ms = cue.start_ms;
+        let end_ms = cue.end_ms;
+
+        let new_id = self.next_cue_id;
+        self.next_cue_id += 1;
+
+        self.document.cues.push(Cue {
+            id: new_id,
+            start_ms,
+            end_ms,
+            text,
+            pos_x,
+            pos_y,
+        });
+        self.sort_cues();
+        self.selected_cue = Some(new_id);
+    }
+
     pub fn delete_selected_cue(&mut self) {
         let Some(selected_id) = self.selected_cue else {
             return;
