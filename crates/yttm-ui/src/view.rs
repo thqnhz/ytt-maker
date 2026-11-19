@@ -74,7 +74,7 @@ impl Render for YttmApp {
                         cue_editor::render_editor_area(
                             &self.document.cues,
                             self.selected_cue,
-                            &self.input.subtitle,
+                            &self.input,
                             cx,
                         ),
                     ),
@@ -96,7 +96,7 @@ impl Render for YttmApp {
                         cue_editor::render_editor_area(
                             &self.document.cues,
                             self.selected_cue,
-                            &self.input.subtitle,
+                            &self.input,
                             cx,
                         ),
                     )),

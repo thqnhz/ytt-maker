@@ -22,6 +22,8 @@ pub struct YttmApp {
 impl YttmApp {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let subtitle_input = cx.new(|cx| InputState::new(window, cx).placeholder("Subtitle text"));
+        let start_input = cx.new(|cx| InputState::new(window, cx).placeholder("00:00.000"));
+        let end_input = cx.new(|cx| InputState::new(window, cx).placeholder("00:00.000"));
 
         cx.subscribe(&subtitle_input, |this, state, event: &InputEvent, cx| {
             if matches!(event, InputEvent::Change)
@@ -50,20 +52,34 @@ impl YttmApp {
             theme: YttmTheme::new(),
             input: YttmInput {
                 subtitle: subtitle_input,
+                start: start_input,
+                end: end_input,
             },
         }
     }
 
-    pub fn sync_subtitle_input(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let text = self
+    pub fn sync_selected_cue_inputs(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let (subtitle, start, end) = self
             .selected_cue
             .and_then(|id| self.document.cues.iter().find(|cue| cue.id == id))
-            .map(|cue| cue.text.clone())
+            .map(|cue| {
+                (
+                    cue.text.clone(),
+                    crate::format::format_ms(cue.start_ms),
+                    crate::format::format_ms(cue.end_ms),
+                )
+            })
             .unwrap_or_default();
 
         self.input.subtitle.update(cx, |input, cx| {
-            input.set_value(text, window, cx);
-        })
+            input.set_value(subtitle, window, cx);
+        });
+        self.input.start.update(cx, |input, cx| {
+            input.set_value(start, window, cx);
+        });
+        self.input.end.update(cx, |input, cx| {
+            input.set_value(end, window, cx);
+        });
     }
 
     /// Append a cue entry at the end
@@ -159,7 +175,7 @@ impl YttmApp {
         self.selected_cue = Some(id);
     }
 
-    fn sort_cues(&mut self) {
+    pub(crate) fn sort_cues(&mut self) {
         self.document.cues.sort_by_key(|cue| (cue.start_ms, cue.id));
     }
 

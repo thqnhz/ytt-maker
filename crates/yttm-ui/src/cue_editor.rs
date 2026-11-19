@@ -1,11 +1,12 @@
 use gpui_kit::assets::IconName;
 use gpui_kit::component::ActiveTheme as _;
 use gpui_kit::component::button::*;
-use gpui_kit::component::input::{Enter, Escape, Input, InputState};
+use gpui_kit::component::input::{Enter, Escape, Input};
 use gpui_kit::component::*;
 use gpui_kit::*;
 
 use yttm_core::Cue;
+use yttm_input::YttmInput;
 
 use crate::app::YttmApp;
 use crate::format::*;
@@ -13,7 +14,7 @@ use crate::format::*;
 pub fn render_editor_area(
     cues: &[Cue],
     selected_cue: Option<u64>,
-    subtitle_input: &Entity<InputState>,
+    input: &YttmInput,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
     let selected = selected_cue.and_then(|id| cues.iter().find(|cue| cue.id == id));
@@ -44,7 +45,7 @@ pub fn render_editor_area(
                         .tooltip("Add cue")
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.append_cue();
-                            this.sync_subtitle_input(window, cx);
+                            this.sync_selected_cue_inputs(window, cx);
                             cx.notify();
                         })),
                 )
@@ -56,7 +57,7 @@ pub fn render_editor_area(
                         .disabled(selected_cue.is_none())
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.add_cue_above_selected();
-                            this.sync_subtitle_input(window, cx);
+                            this.sync_selected_cue_inputs(window, cx);
                             cx.notify();
                         })),
                 )
@@ -68,7 +69,7 @@ pub fn render_editor_area(
                         .disabled(selected_cue.is_none())
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.add_cue_below_selected();
-                            this.sync_subtitle_input(window, cx);
+                            this.sync_selected_cue_inputs(window, cx);
                             cx.notify();
                         })),
                 )
@@ -80,13 +81,13 @@ pub fn render_editor_area(
                         .disabled(selected_cue.is_none())
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.delete_selected_cue();
-                            this.sync_subtitle_input(window, cx);
+                            this.sync_selected_cue_inputs(window, cx);
                             cx.notify();
                         })),
                 ),
         )
         .child(render_cue_table(cues, selected_cue, cx))
-        .child(render_selected_details(selected, subtitle_input, cx))
+        .child(render_selected_details(selected, input, cx))
 }
 
 fn render_cue_table(
@@ -156,7 +157,7 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
 
     row.on_click(cx.listener(move |this, _, window, cx| {
         this.selected_cue = Some(cue_id);
-        this.sync_subtitle_input(window, cx);
+        this.sync_selected_cue_inputs(window, cx);
         cx.notify();
     }))
     .child(div().w_24().child(format_ms(cue.start_ms)))
@@ -168,7 +169,7 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
 
 fn render_selected_details(
     selected: Option<&Cue>,
-    subtitle_input: &Entity<InputState>,
+    input: &YttmInput,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
     let mut details = div()
@@ -184,35 +185,9 @@ fn render_selected_details(
 
     if let Some(cue) = selected {
         details = details
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_4()
-                    .text_color(cx.theme().muted_foreground)
-                    .child(format!(
-                        "{} - {} ({})",
-                        format_ms(cue.start_ms),
-                        format_ms(cue.end_ms),
-                        format_duration_ms(cue.end_ms.saturating_sub(cue.start_ms))
-                    ))
-                    .child(div().flex_1().min_w_0())
-                    .child(format!(
-                        "Pos X: {} Pos Y: {}",
-                        format_opt_i32(cue.pos_x),
-                        format_opt_i32(cue.pos_y),
-                    )),
-            )
-            .child(
-                div()
-                    .on_action(cx.listener(|_, _: &Enter, window, cx| {
-                        window.blur(cx);
-                    }))
-                    .on_action(cx.listener(|_, _: &Escape, window, cx| {
-                        window.blur(cx);
-                    }))
-                    .child(Input::new(subtitle_input)),
-            );
+            .child(render_cue_meta(cue, cx))
+            .child(render_time_fields(input, cx))
+            .child(render_subtitle_field(input, cx));
     } else {
         details = details.child(
             div()
@@ -221,4 +196,96 @@ fn render_selected_details(
         );
     }
     details
+
+}
+
+fn render_cue_meta(cue: &Cue, cx: &Context<YttmApp>) -> impl IntoElement {
+    div()
+        .flex()
+        .items_center()
+        .gap_4()
+        .text_color(cx.theme().muted_foreground)
+        .child(format!(
+            "{} - {} ({})",
+            format_ms(cue.start_ms),
+            format_ms(cue.end_ms),
+            format_duration_ms(cue.end_ms.saturating_sub(cue.start_ms))
+        ))
+        .child(div().flex_1().min_w_0())
+        .child(format!(
+            "Pos X: {} Pos Y: {}",
+            format_opt_i32(cue.pos_x),
+            format_opt_i32(cue.pos_y),
+        ))
+}
+
+fn render_time_fields(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
+    div()
+        .flex()
+        .items_center()
+        .gap_2()
+        .child(time_label("Start", cx))
+        .child(start_time_input(input, cx))
+        .child(time_label("End", cx))
+        .child(end_time_input(input, cx))
+}
+
+fn time_label(text: &'static str, cx: &Context<YttmApp>) -> impl IntoElement {
+    div()
+        .w_12()
+        .text_color(cx.theme().muted_foreground)
+        .child(text)
+}
+
+fn start_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
+    div()
+        .w_32()
+        .on_action(cx.listener(|this, _: &Enter, window, cx| {
+            if let Some(id) = this.selected_cue {
+                let value = this.input.start.read(cx).value().to_string();
+                if let Some(ms) = parse_ms(&value) && let Some(cue) = this.document.cues.iter_mut().find(|c| c.id == id) {
+                    cue.start_ms = ms;
+                    this.sort_cues();
+                }
+            }
+            this.sync_selected_cue_inputs(window, cx);
+            window.blur(cx);
+        }))
+        .on_action(cx.listener(|this, _: &Escape, window, cx| {
+            this.sync_selected_cue_inputs(window, cx);
+            window.blur(cx);
+        }))
+        .child(Input::new(&input.start))
+}
+
+fn end_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
+    div()
+        .w_32()
+        .on_action(cx.listener(|this, _: &Enter, window, cx| {
+            if let Some(id) = this.selected_cue {
+                let value = this.input.end.read(cx).value().to_string();
+                if let Some(ms) = parse_ms(&value) && let Some(cue) = this.document.cues.iter_mut().find(|c| c.id == id) {
+                    cue.end_ms = ms;
+                }
+            }
+            this.sync_selected_cue_inputs(window, cx);
+            window.blur(cx);
+        }))
+        .on_action(cx.listener(|this, _: &Escape, window, cx| {
+            this.sync_selected_cue_inputs(window, cx);
+            window.blur(cx);
+        }))
+        .child(Input::new(&input.end))
+}
+
+fn render_subtitle_field(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
+    div()
+        .w_full()
+        .on_action(cx.listener(|_, _: &Enter, window, cx| {
+            window.blur(cx);
+        }))
+        .on_action(cx.listener(|_, _: &Escape, window, cx| {
+            window.blur(cx);
+        }))
+        .child(Input::new(&input.subtitle))
 }
