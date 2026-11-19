@@ -53,19 +53,19 @@ impl YttmApp {
     }
 
     pub fn sync_selected_cue_inputs(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let (subtitle, start, end) = self
+        let values = self
             .selected_cue
             .and_then(|id| self.document.cues.iter().find(|cue| cue.id == id))
-            .map(|cue| {
-                (
-                    cue.text.clone(),
-                    crate::format::format_ms(cue.start_ms),
-                    crate::format::format_ms(cue.end_ms),
-                )
+            .map(|cue| yttm_input::SelectedCueValues {
+                subtitle: cue.text.clone(),
+                start: crate::format::format_ms(cue.start_ms),
+                end: crate::format::format_ms(cue.end_ms),
+                pos_x: crate::format::format_opt_i32(cue.pos_x),
+                pos_y: crate::format::format_opt_i32(cue.pos_y),
             })
             .unwrap_or_default();
 
-        self.input.sync_selected(subtitle, start, end, window, cx);
+        self.input.sync_selected(values, window, cx);
     }
 
     /// Append a cue entry at the end

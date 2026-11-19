@@ -185,8 +185,14 @@ fn render_selected_details(
 
     if let Some(cue) = selected {
         details = details
-            .child(render_cue_meta(cue, cx))
-            .child(render_time_fields(input, cx))
+            .child(
+                div()
+                    .flex()
+                    .flex_row()
+                    .child(render_time_fields(cue, input, cx))
+                    .child(div().flex_1())
+                    .child(render_pos_fields(input, cx)),
+            )
             .child(render_subtitle_field(input, cx));
     } else {
         details = details.child(
@@ -198,38 +204,69 @@ fn render_selected_details(
     details
 }
 
-fn render_cue_meta(cue: &Cue, cx: &Context<YttmApp>) -> impl IntoElement {
-    div()
-        .flex()
-        .items_center()
-        .gap_4()
-        .text_color(cx.theme().muted_foreground)
-        .child(format!(
-            "{} - {} ({})",
-            format_ms(cue.start_ms),
-            format_ms(cue.end_ms),
-            format_duration_ms(cue.end_ms.saturating_sub(cue.start_ms))
-        ))
-        .child(div().flex_1().min_w_0())
-        .child(format!(
-            "Pos X: {} Pos Y: {}",
-            format_opt_i32(cue.pos_x),
-            format_opt_i32(cue.pos_y),
-        ))
-}
-
-fn render_time_fields(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
+fn render_time_fields(cue: &Cue, input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
     div()
         .flex()
         .items_center()
         .gap_2()
-        .child(time_label("Start", cx))
+        .child(meta_label("Start", cx))
         .child(start_time_input(input, cx))
-        .child(time_label("End", cx))
+        .child(meta_label("End", cx))
         .child(end_time_input(input, cx))
+        .child(div().text_color(cx.theme().muted_foreground).child(format!(
+            "({})",
+            format_duration_ms(cue.end_ms.saturating_sub(cue.start_ms))
+        )))
 }
 
-fn time_label(text: &'static str, cx: &Context<YttmApp>) -> impl IntoElement {
+fn render_pos_fields(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
+    div()
+        .flex()
+        .items_center()
+        .gap_2()
+        .child(meta_label("Pos X", cx))
+        .child(
+            div()
+                .w_24()
+                .on_action(cx.listener(|this, _: &Enter, window, cx| {
+                    if let Some(id) = this.selected_cue {
+                        let v = this.input.pos_x.read(cx).value().to_string();
+                        if let Some(cue) = this.document.cues.iter_mut().find(|c| c.id == id) {
+                            cue.pos_x = yttm_input::parse_opt_i32(&v);
+                        }
+                    }
+                    this.sync_selected_cue_inputs(window, cx);
+                    window.blur(cx);
+                }))
+                .on_action(cx.listener(|this, _: &Escape, window, cx| {
+                    this.sync_selected_cue_inputs(window, cx);
+                    window.blur(cx);
+                }))
+                .child(Input::new(&input.pos_x)),
+        )
+        .child(meta_label("Pos Y", cx))
+        .child(
+            div()
+                .w_24()
+                .on_action(cx.listener(|this, _: &Enter, window, cx| {
+                    if let Some(id) = this.selected_cue {
+                        let v = this.input.pos_y.read(cx).value().to_string();
+                        if let Some(cue) = this.document.cues.iter_mut().find(|c| c.id == id) {
+                            cue.pos_y = yttm_input::parse_opt_i32(&v);
+                        }
+                    }
+                    this.sync_selected_cue_inputs(window, cx);
+                    window.blur(cx);
+                }))
+                .on_action(cx.listener(|this, _: &Escape, window, cx| {
+                    this.sync_selected_cue_inputs(window, cx);
+                    window.blur(cx);
+                }))
+                .child(Input::new(&input.pos_y)),
+        )
+}
+
+fn meta_label(text: &'static str, cx: &Context<YttmApp>) -> impl IntoElement {
     div()
         .w_12()
         .text_color(cx.theme().muted_foreground)

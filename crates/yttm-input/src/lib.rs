@@ -1,10 +1,21 @@
 use gpui_kit::component::input::*;
 use gpui_kit::*;
 
+#[derive(Clone, Debug, Default)]
+pub struct SelectedCueValues {
+    pub subtitle: String,
+    pub start: String,
+    pub end: String,
+    pub pos_x: String,
+    pub pos_y: String,
+}
+
 pub struct YttmInput {
     pub subtitle: Entity<InputState>,
     pub start: Entity<InputState>,
     pub end: Entity<InputState>,
+    pub pos_x: Entity<InputState>,
+    pub pos_y: Entity<InputState>,
 }
 
 impl YttmInput {
@@ -13,26 +24,27 @@ impl YttmInput {
             subtitle: cx.new(|cx| InputState::new(window, cx).placeholder("Subtitle text")),
             start: cx.new(|cx| InputState::new(window, cx).placeholder("00:00.000")),
             end: cx.new(|cx| InputState::new(window, cx).placeholder("00:00.000")),
+            pos_x: cx.new(|cx| InputState::new(window, cx).placeholder("-")),
+            pos_y: cx.new(|cx| InputState::new(window, cx).placeholder("-")),
         }
     }
 
     pub fn sync_selected<V: 'static>(
         &self,
-        subtitle: String,
-        start: String,
-        end: String,
+        values: SelectedCueValues,
         window: &mut Window,
         cx: &mut Context<V>,
     ) {
-        self.subtitle.update(cx, |input, cx| {
-            input.set_value(subtitle, window, cx);
-        });
-        self.start.update(cx, |input, cx| {
-            input.set_value(start, window, cx);
-        });
-        self.end.update(cx, |input, cx| {
-            input.set_value(end, window, cx);
-        });
+        self.subtitle
+            .update(cx, |i, cx| i.set_value(values.subtitle, window, cx));
+        self.start
+            .update(cx, |i, cx| i.set_value(values.start, window, cx));
+        self.end
+            .update(cx, |i, cx| i.set_value(values.end, window, cx));
+        self.pos_x
+            .update(cx, |i, cx| i.set_value(values.pos_x, window, cx));
+        self.pos_y
+            .update(cx, |i, cx| i.set_value(values.pos_y, window, cx));
     }
 }
 
@@ -67,4 +79,13 @@ pub fn parse_ms(s: &str) -> Option<u64> {
     };
 
     Some(hours * 3_600_000 + mins * 60_000 + secs * 1000 + millis)
+}
+
+pub fn parse_opt_i32(s: &str) -> Option<i32> {
+    let s = s.trim();
+    if s.is_empty() || s == "-" {
+        None
+    } else {
+        s.parse::<i32>().ok()
+    }
 }

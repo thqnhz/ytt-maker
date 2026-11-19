@@ -28,7 +28,8 @@ This list is not exhausted
     - [x] Add blank row above/below
     - [x] Pin the selected editor down so it's clear which one is being edited
     - [ ] Keybind
-        - [x] `Enter`/`Esc` to save current edit
+        - [x] `Enter` to save current edit
+        - [x] `Esc` to revert the edit
         - [ ] `Enter` to edit selected entry
 - [ ] UI
     - [x] Dark mode
