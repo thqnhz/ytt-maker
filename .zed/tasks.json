@@ -13,4 +13,11 @@
         "allow_concurrent_runs": true,
         "use_new_terminal": false,
     },
+    {
+        "label": "fmt",
+        "command": "cargo",
+        "args": ["fmt", "--all"],
+        "allow_concurrent_runs": true,
+        "use_new_terminal": false,
+    },
 ]

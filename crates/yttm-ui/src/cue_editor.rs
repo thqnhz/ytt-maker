@@ -169,7 +169,9 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
 
     let mut status = div().w_8().flex().justify_center();
     if invalid {
-        status = status.text_color(cx.theme().danger).child(IconName::CircleAlert);
+        status = status
+            .text_color(cx.theme().danger)
+            .child(IconName::CircleAlert);
     }
 
     let mut subtitle = div().flex_1().min_w_0();
