@@ -30,9 +30,13 @@ This list is not exhausted
     - [ ] Keybind
         - [x] `Enter` to save current edit
         - [x] `Esc` to revert the edit
-        - [ ] `Enter` to edit selected entry
 - [ ] UI
     - [x] Dark mode
+- [ ] Settings
+    - [ ] Config menu
+    - [ ] Save config
+    - [ ] Backup/Restore
+    - [ ] Versioning
 - [ ] .YTT format
     - [ ] Import
         - [ ] Import from different formats?
