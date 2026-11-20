@@ -46,6 +46,7 @@ pub fn render_editor_area(
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.append_cue();
                             this.sync_selected_cue_inputs(window, cx);
+                            this.focus_subtitle(window, cx);
                             cx.notify();
                         })),
                 )
@@ -58,6 +59,7 @@ pub fn render_editor_area(
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.add_cue_above_selected();
                             this.sync_selected_cue_inputs(window, cx);
+                            this.focus_subtitle(window, cx);
                             cx.notify();
                         })),
                 )
@@ -70,6 +72,7 @@ pub fn render_editor_area(
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.add_cue_below_selected();
                             this.sync_selected_cue_inputs(window, cx);
+                            this.focus_subtitle(window, cx);
                             cx.notify();
                         })),
                 )
@@ -82,6 +85,7 @@ pub fn render_editor_area(
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.duplicate_selected_cue();
                             this.sync_selected_cue_inputs(window, cx);
+                            this.focus_subtitle(window, cx);
                             cx.notify();
                         })),
                 )
@@ -94,6 +98,9 @@ pub fn render_editor_area(
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.delete_selected_cue();
                             this.sync_selected_cue_inputs(window, cx);
+                            if this.selected_cue.is_some() {
+                                this.focus_subtitle(window, cx);
+                            }
                             cx.notify();
                         })),
                 ),
@@ -170,6 +177,7 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
     row.on_click(cx.listener(move |this, _, window, cx| {
         this.selected_cue = Some(cue_id);
         this.sync_selected_cue_inputs(window, cx);
+        this.focus_subtitle(window, cx);
         cx.notify();
     }))
     .child(div().w_24().child(format_ms(cue.start_ms)))

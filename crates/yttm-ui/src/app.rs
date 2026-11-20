@@ -54,6 +54,12 @@ impl YttmApp {
         self.input.sync_selected(values, window, cx);
     }
 
+    pub fn focus_subtitle(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.input.subtitle.update(cx, |state, cx| {
+            state.focus(window, cx);
+        });
+    }
+
     /// Append a cue entry at the end
     pub fn append_cue(&mut self) {
         let start_ms = self.document.cues.last().map(|cue| cue.end_ms).unwrap_or(0);
