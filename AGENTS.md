@@ -2,10 +2,6 @@
 
 YTTM is a YouTube TimedText (YTT) Editing tool
 
-## Commands
-
-- See [`Makefile`](Makefile).
-
 ## Skills
 
 - See [`.agents/skills`](.agents/skills)
