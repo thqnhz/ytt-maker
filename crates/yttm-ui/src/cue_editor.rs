@@ -390,11 +390,11 @@ fn render_subtitle_field(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoE
                 .flex()
                 .gap_2()
                 .child(
-                    Button::new("revert-subtitle")
+                    Button::new("revert-cue")
                         .icon(IconName::Close)
                         .ghost()
                         .text_color(cx.theme().danger)
-                        .tooltip("Revert subtitle")
+                        .tooltip("Revert changes")
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.sync_selected_cue_inputs(window, cx);
                             window.blur(cx);
@@ -402,19 +402,13 @@ fn render_subtitle_field(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoE
                         })),
                 )
                 .child(
-                    Button::new("commit-subtitle")
+                    Button::new("commit-cue")
                         .icon(IconName::Check)
                         .ghost()
                         .text_color(cx.theme().success)
-                        .tooltip("Commit subtitle")
+                        .tooltip("Commit changes")
                         .on_click(cx.listener(|this, _, window, cx| {
-                            if let Some(id) = this.selected_cue
-                                && let Some(cue) =
-                                    this.document.cues.iter_mut().find(|c| c.id == id)
-                            {
-                                cue.text = this.input.subtitle.read(cx).value().to_string();
-                                cx.notify();
-                            }
+                            this.commit_selected_cue_inputs(window, cx);
                             window.blur(cx);
                         })),
                 ),

@@ -52,6 +52,42 @@ impl YttmApp {
         self.input.sync_selected(values, window, cx);
     }
 
+    pub fn commit_selected_cue_inputs(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(id) = self.selected_cue else {
+            self.sync_selected_cue_inputs(window, cx);
+            return;
+        };
+
+        let subtitle = self.input.subtitle.read(cx).value().to_string();
+        let start = self.input.start.read(cx).value().to_string();
+        let end = self.input.end.read(cx).value().to_string();
+        let pos_x = self.input.pos_x.read(cx).value().to_string();
+        let pos_y = self.input.pos_y.read(cx).value().to_string();
+
+        let mut should_sort = false;
+        if let Some(cue) = self.document.cues.iter_mut().find(|c| c.id == id) {
+            cue.text = subtitle;
+
+            if let Some(ms) = yttm_input::parse_ms(&start) {
+                cue.start_ms = ms;
+                should_sort = true;
+            }
+            if let Some(ms) = yttm_input::parse_ms(&end) {
+                cue.end_ms = ms;
+            }
+
+            cue.pos_x = yttm_input::parse_opt_i32(&pos_x);
+            cue.pos_y = yttm_input::parse_opt_i32(&pos_y);
+        }
+
+        if should_sort {
+            self.sort_cues();
+        }
+
+        self.sync_selected_cue_inputs(window, cx);
+        cx.notify();
+    }
+
     pub fn focus_subtitle(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.input.subtitle.update(cx, |state, cx| {
             state.focus(window, cx);
