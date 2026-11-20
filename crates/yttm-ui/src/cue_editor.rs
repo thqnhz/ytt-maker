@@ -217,6 +217,17 @@ fn render_selected_details(
 }
 
 fn render_time_fields(cue: &Cue, input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
+    let invalid = cue.end_ms < cue.start_ms;
+    let duration = if invalid {
+        div()
+            .text_color(cx.theme().danger)
+            .child("(invalid: end time before start time)")
+    } else {
+        div().text_color(cx.theme().muted_foreground).child(format!(
+            "({})",
+            format_duration_ms(cue.end_ms.saturating_sub(cue.start_ms))
+        ))
+    };
     div()
         .flex()
         .items_center()
@@ -225,10 +236,7 @@ fn render_time_fields(cue: &Cue, input: &YttmInput, cx: &Context<YttmApp>) -> im
         .child(start_time_input(input, cx))
         .child(meta_label("End", cx))
         .child(end_time_input(input, cx))
-        .child(div().text_color(cx.theme().muted_foreground).child(format!(
-            "({})",
-            format_duration_ms(cue.end_ms.saturating_sub(cue.start_ms))
-        )))
+        .child(duration)
 }
 
 fn render_pos_fields(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
