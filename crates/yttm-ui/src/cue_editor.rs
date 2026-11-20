@@ -265,7 +265,7 @@ fn render_pos_fields(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoEleme
         .child(meta_label("Pos X", cx))
         .child(
             div()
-                .w_24()
+                .w_12()
                 .on_action(cx.listener(|this, _: &Enter, window, cx| {
                     if let Some(id) = this.selected_cue {
                         let v = this.input.pos_x.read(cx).value().to_string();
@@ -285,7 +285,7 @@ fn render_pos_fields(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoEleme
         .child(meta_label("Pos Y", cx))
         .child(
             div()
-                .w_24()
+                .w_12()
                 .on_action(cx.listener(|this, _: &Enter, window, cx| {
                     if let Some(id) = this.selected_cue {
                         let v = this.input.pos_y.read(cx).value().to_string();
@@ -313,7 +313,7 @@ fn meta_label(text: &'static str, cx: &Context<YttmApp>) -> impl IntoElement {
 
 fn start_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
     div()
-        .w_32()
+        .w_24()
         .on_action(cx.listener(|this, _: &Enter, window, cx| {
             if let Some(id) = this.selected_cue {
                 let value = this.input.start.read(cx).value().to_string();
@@ -336,7 +336,7 @@ fn start_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElemen
 
 fn end_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
     div()
-        .w_32()
+        .w_24()
         .on_action(cx.listener(|this, _: &Enter, window, cx| {
             if let Some(id) = this.selected_cue {
                 let value = this.input.end.read(cx).value().to_string();

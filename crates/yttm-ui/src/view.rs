@@ -55,53 +55,56 @@ fn no_hairline_resize_appearance() -> ResizeHandleRenderer {
 
 impl Render for YttmApp {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let workspace = match self.workspace.layout {
-            WorkspaceLayout::Stacked => v_resizable("main-split-stacked")
-                .with_state(&self.workspace.split.stacked)
-                .with_handle_appearance(no_hairline_resize_appearance())
-                .child(
-                    resizable_panel().size(px(400.)).child(
-                        div()
-                            .size_full()
-                            .flex()
-                            .flex_col()
-                            .pb(px(4.))
-                            .child(self.render_video_area(cx)),
-                    ),
-                )
-                .child(resizable_panel().child(
-                    div().size_full().flex().flex_col().pt(px(4.)).child(
-                        cue_editor::render_editor_area(
-                            &self.document.cues,
-                            self.selected_cue,
-                            &self.input,
-                            cx,
+        let workspace =
+            match self.workspace.layout {
+                WorkspaceLayout::Stacked => v_resizable("main-split-stacked")
+                    .with_state(&self.workspace.split.stacked)
+                    .with_handle_appearance(no_hairline_resize_appearance())
+                    .child(
+                        resizable_panel().size(px(400.)).child(
+                            div()
+                                .size_full()
+                                .flex()
+                                .flex_col()
+                                .pb(px(4.))
+                                .child(self.render_video_area(cx)),
                         ),
-                    ),
-                )),
-            WorkspaceLayout::SideBySide => h_resizable("main-split-side")
-                .with_state(&self.workspace.split.side_by_side)
-                .with_handle_appearance(no_hairline_resize_appearance())
-                .child(
-                    resizable_panel().size(px(480.)).child(
-                        div()
-                            .size_full()
-                            .flex()
-                            .pr(px(4.))
-                            .child(self.render_video_area(cx)),
-                    ),
-                )
-                .child(
-                    resizable_panel().child(div().size_full().flex().pl(px(4.)).child(
-                        cue_editor::render_editor_area(
-                            &self.document.cues,
-                            self.selected_cue,
-                            &self.input,
-                            cx,
+                    )
+                    .child(resizable_panel().size_range(px(260.)..px(4000.)).child(
+                        div().size_full().flex().flex_col().pt(px(4.)).child(
+                            cue_editor::render_editor_area(
+                                &self.document.cues,
+                                self.selected_cue,
+                                &self.input,
+                                cx,
+                            ),
                         ),
                     )),
-                ),
-        };
+                WorkspaceLayout::SideBySide => {
+                    h_resizable("main-split-side")
+                        .with_state(&self.workspace.split.side_by_side)
+                        .with_handle_appearance(no_hairline_resize_appearance())
+                        .child(
+                            resizable_panel().size(px(480.)).child(
+                                div()
+                                    .size_full()
+                                    .flex()
+                                    .pr(px(4.))
+                                    .child(self.render_video_area(cx)),
+                            ),
+                        )
+                        .child(resizable_panel().size_range(px(520.)..px(4000.)).child(
+                            div().size_full().flex().pl(px(4.)).child(
+                                cue_editor::render_editor_area(
+                                    &self.document.cues,
+                                    self.selected_cue,
+                                    &self.input,
+                                    cx,
+                                ),
+                            ),
+                        ))
+                }
+            };
         div()
             .size_full()
             .flex()
