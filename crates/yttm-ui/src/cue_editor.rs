@@ -136,11 +136,12 @@ fn render_cue_header(cx: &Context<YttmApp>) -> impl IntoElement {
     div()
         .flex()
         .items_center()
-        .px_3()
+        .pr_3()
         .h_8()
         .border_b_1()
         .border_color(cx.theme().border)
         .text_color(cx.theme().muted_foreground)
+        .child(div().w_8())
         .child(div().w_24().child("Start"))
         .child(div().w_24().child("End"))
         .child(div().flex_1().min_w_0().child("Subtitle"))
@@ -151,18 +152,24 @@ fn render_cue_header(cx: &Context<YttmApp>) -> impl IntoElement {
 fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -> impl IntoElement {
     let is_selected = selected_cue == Some(cue.id);
     let cue_id = cue.id;
+    let invalid = cue.end_ms < cue.start_ms;
 
     let mut row = div()
         .id(("cue-row", cue_id as usize))
         .flex()
         .items_center()
-        .px_3()
+        .pr_3()
         .min_h_8()
         .border_b_1()
         .border_color(cx.theme().border);
 
     if is_selected {
         row = row.bg(cx.theme().selection);
+    }
+
+    let mut status = div().w_8().flex().justify_center();
+    if invalid {
+        status = status.text_color(cx.theme().danger).child(IconName::CircleAlert);
     }
 
     let mut subtitle = div().flex_1().min_w_0();
@@ -180,6 +187,7 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
         this.focus_subtitle(window, cx);
         cx.notify();
     }))
+    .child(status)
     .child(div().w_24().child(format_ms(cue.start_ms)))
     .child(div().w_24().child(format_ms(cue.end_ms)))
     .child(subtitle)
