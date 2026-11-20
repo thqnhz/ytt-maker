@@ -20,8 +20,6 @@ pub struct YttmApp {
 
 impl YttmApp {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let input = YttmInput::new(window, cx);
-
         Self {
             document: Document { cues: Vec::new() },
             next_cue_id: 1,
@@ -34,7 +32,7 @@ impl YttmApp {
                 },
             },
             theme: YttmTheme::new(),
-            input,
+            input: YttmInput::new(window, cx),
         }
     }
 
@@ -92,26 +90,13 @@ impl YttmApp {
         let Some(cue) = self.document.cues.iter().find(|c| c.id == id) else {
             return;
         };
+        let mut new_cue = cue.clone();
+        new_cue.id = self.next_cue_id;
 
-        let text = cue.text.clone();
-        let pos_x = cue.pos_x;
-        let pos_y = cue.pos_y;
-        let start_ms = cue.start_ms;
-        let end_ms = cue.end_ms;
-
-        let new_id = self.next_cue_id;
-        self.next_cue_id += 1;
-
-        self.document.cues.push(Cue {
-            id: new_id,
-            start_ms,
-            end_ms,
-            text,
-            pos_x,
-            pos_y,
-        });
+        self.document.cues.push(new_cue);
         self.sort_cues();
-        self.selected_cue = Some(new_id);
+        self.selected_cue = Some(self.next_cue_id);
+        self.next_cue_id += 1;
     }
 
     pub fn delete_selected_cue(&mut self) {
