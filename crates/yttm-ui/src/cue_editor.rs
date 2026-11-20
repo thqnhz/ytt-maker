@@ -183,6 +183,23 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
         subtitle = subtitle.flex().flex_col().child(cue.text.clone());
     }
 
+    let pos_x = if let Some(v) = cue.pos_x {
+        div().w_16().child(v.to_string())
+    } else {
+        div()
+            .w_16()
+            .text_color(cx.theme().muted_foreground)
+            .child("-")
+    };
+    let pos_y = if let Some(v) = cue.pos_y {
+        div().w_16().child(v.to_string())
+    } else {
+        div()
+            .w_16()
+            .text_color(cx.theme().muted_foreground)
+            .child("-")
+    };
+
     row.on_click(cx.listener(move |this, _, window, cx| {
         this.selected_cue = Some(cue_id);
         this.sync_selected_cue_inputs(window, cx);
@@ -193,8 +210,8 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
     .child(div().w_24().child(format_ms(cue.start_ms)))
     .child(div().w_24().child(format_ms(cue.end_ms)))
     .child(subtitle)
-    .child(div().w_16().child(format_opt_i32(cue.pos_x)))
-    .child(div().w_16().child(format_opt_i32(cue.pos_y)))
+    .child(pos_x)
+    .child(pos_y)
 }
 
 fn render_selected_details(

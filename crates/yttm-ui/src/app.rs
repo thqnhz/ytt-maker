@@ -44,8 +44,8 @@ impl YttmApp {
                 subtitle: cue.text.clone(),
                 start: crate::format::format_ms(cue.start_ms),
                 end: crate::format::format_ms(cue.end_ms),
-                pos_x: crate::format::format_opt_i32(cue.pos_x),
-                pos_y: crate::format::format_opt_i32(cue.pos_y),
+                pos_x: cue.pos_x.map(|v| v.to_string()).unwrap_or_default(),
+                pos_y: cue.pos_y.map(|v| v.to_string()).unwrap_or_default(),
             })
             .unwrap_or_default();
 
