@@ -181,25 +181,60 @@ impl YttmApp {
     }
 
     fn render_video_area(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let screen = div()
+            .id("video-screen")
+            .flex()
+            .items_center()
+            .justify_center()
+            .bg(gpui::black())
+            .child(div().text_color(gpui::white()).child("No video loaded"));
+
+        let content = match self.workspace.layout {
+            WorkspaceLayout::SideBySide => div()
+                .id("video-content")
+                .size_full()
+                .flex()
+                .flex_row()
+                .items_start()
+                .min_w_0()
+                .min_h_0()
+                .child(
+                    screen
+                        .h_full()
+                        .max_w_full()
+                        .min_w_0()
+                        .aspect_ratio(16.0 / 9.0),
+                )
+                .child(div().id("video-side-pane").flex_1().min_w_0().h_full()),
+            WorkspaceLayout::Stacked => div()
+                .id("video-content")
+                .size_full()
+                .flex()
+                .flex_col()
+                .items_start()
+                .min_w_0()
+                .min_h_0()
+                .child(
+                    screen
+                        .w_full()
+                        .max_h_full()
+                        .min_h_0()
+                        .aspect_ratio(16.0 / 9.0),
+                )
+                .child(div().id("video-bottom-pane").flex_1().min_h_0().w_full()),
+        };
+
         div()
             .id("video-area")
             .flex()
-            .flex_col()
             .flex_1()
             .min_h_0()
             .min_w_0()
-            .items_center()
-            .justify_center()
-            .gap_1()
+            .overflow_hidden()
             .rounded(cx.theme().radius)
             .border_1()
             .border_color(cx.theme().border)
             .bg(cx.theme().muted)
-            .child("Video preview")
-            .child(
-                div()
-                    .text_color(cx.theme().muted_foreground)
-                    .child("Player + subtitle overlay"),
-            )
+            .child(content)
     }
 }
