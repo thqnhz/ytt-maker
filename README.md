@@ -12,6 +12,12 @@ If you haven't, here is [one example](https://youtu.be/NTrm_idbhUk) (turn on `En
 
 If you have, it's called YouTube Timed Text (`.ytt` format), and this is the tool to make it.
 
+## Current app preview
+
+| ![image](docs/static/app_preview.png "Default (stacked) display") | ![image](docs/static/app_preview_2.png "Side by side display") |
+| ----------------------------------------------------------------- | -------------------------------------------------------------- |
+| Default (stacked) display                                         | Side by side display                                           |
+
 ## Q/A
 
 - Q: If this tool wasn't complete, what were they using to make the subtitle?
