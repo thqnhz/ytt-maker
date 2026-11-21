@@ -1,7 +1,5 @@
-use gpui_kit::assets::IconName;
 use gpui_kit::base::input::InputBaseState;
 use gpui_kit::component::ActiveTheme as _;
-use gpui_kit::component::button::*;
 use gpui_kit::component::input::{Enter, Escape, Input, InputMode, Textarea};
 use gpui_kit::component::*;
 use gpui_kit::prelude::*;
@@ -11,6 +9,10 @@ use yttm_core::Cue;
 use yttm_input::YttmInput;
 
 use crate::app::YttmApp;
+use crate::button::{
+    add_cue_above_button, add_cue_below_button, add_cue_button, commit_cue_button,
+    delete_cue_button, duplicate_cue_button, revert_cue_button,
+};
 use crate::format::*;
 
 pub fn render_editor_area(
@@ -45,72 +47,11 @@ fn render_cue_editor_toolbar(selected_cue: Option<u64>, cx: &Context<YttmApp>) -
         .h_8()
         .border_b_1()
         .border_color(cx.theme().border)
-        .child(
-            Button::new("add-cue")
-                .icon(IconName::Plus)
-                .ghost()
-                .tooltip("Add cue")
-                .on_click(cx.listener(|this, _, window, cx| {
-                    this.append_cue();
-                    this.sync_selected_cue_inputs(window, cx);
-                    this.focus_subtitle(window, cx);
-                    cx.notify();
-                })),
-        )
-        .child(
-            Button::new("add-cue-above")
-                .icon(IconName::ArrowUp)
-                .ghost()
-                .tooltip("Add cue above selection")
-                .disabled(selected_cue.is_none())
-                .on_click(cx.listener(|this, _, window, cx| {
-                    this.add_cue_above_selected();
-                    this.sync_selected_cue_inputs(window, cx);
-                    this.focus_subtitle(window, cx);
-                    cx.notify();
-                })),
-        )
-        .child(
-            Button::new("add-cue-below")
-                .icon(IconName::ArrowDown)
-                .ghost()
-                .tooltip("Add cue below selection")
-                .disabled(selected_cue.is_none())
-                .on_click(cx.listener(|this, _, window, cx| {
-                    this.add_cue_below_selected();
-                    this.sync_selected_cue_inputs(window, cx);
-                    this.focus_subtitle(window, cx);
-                    cx.notify();
-                })),
-        )
-        .child(
-            Button::new("duplicate-cue")
-                .icon(IconName::Copy)
-                .ghost()
-                .tooltip("Duplicate selected cue")
-                .disabled(selected_cue.is_none())
-                .on_click(cx.listener(|this, _, window, cx| {
-                    this.duplicate_selected_cue();
-                    this.sync_selected_cue_inputs(window, cx);
-                    this.focus_subtitle(window, cx);
-                    cx.notify();
-                })),
-        )
-        .child(
-            Button::new("delete-cue")
-                .icon(IconName::Minus)
-                .ghost()
-                .tooltip("Delete selected cue")
-                .disabled(selected_cue.is_none())
-                .on_click(cx.listener(|this, _, window, cx| {
-                    this.delete_selected_cue();
-                    this.sync_selected_cue_inputs(window, cx);
-                    if this.selected_cue.is_some() {
-                        this.focus_subtitle(window, cx);
-                    }
-                    cx.notify();
-                })),
-        )
+        .child(add_cue_button(cx))
+        .child(add_cue_above_button(cx, selected_cue))
+        .child(add_cue_below_button(cx, selected_cue))
+        .child(duplicate_cue_button(cx, selected_cue))
+        .child(delete_cue_button(cx, selected_cue))
 }
 
 fn render_cue_table(
@@ -361,28 +302,7 @@ fn render_subtitle_field(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoE
             div()
                 .flex()
                 .gap_2()
-                .child(
-                    Button::new("revert-cue")
-                        .icon(IconName::Close)
-                        .ghost()
-                        .text_color(cx.theme().danger)
-                        .tooltip("Revert changes")
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            this.sync_selected_cue_inputs(window, cx);
-                            window.blur(cx);
-                            cx.notify();
-                        })),
-                )
-                .child(
-                    Button::new("commit-cue")
-                        .icon(IconName::Check)
-                        .ghost()
-                        .text_color(cx.theme().success)
-                        .tooltip("Commit changes")
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            this.commit_selected_cue_inputs(window, cx);
-                            window.blur(cx);
-                        })),
-                ),
+                .child(revert_cue_button(cx))
+                .child(commit_cue_button(cx)),
         )
 }

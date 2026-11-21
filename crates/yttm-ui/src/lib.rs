@@ -1,4 +1,5 @@
 mod app;
+mod button;
 mod cue_editor;
 mod format;
 mod theme;
