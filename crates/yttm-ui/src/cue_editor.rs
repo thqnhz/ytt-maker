@@ -302,33 +302,9 @@ fn render_pos_fields(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoEleme
         .items_center()
         .gap_2()
         .child(meta_label("Pos X", cx))
-        .child(
-            div()
-                .w_12()
-                .on_action(cx.listener(|this, _: &Enter, window, cx| {
-                    this.commit_selected_cue_inputs(window, cx);
-                    window.blur(cx);
-                }))
-                .on_action(cx.listener(|this, _: &Escape, window, cx| {
-                    this.sync_selected_cue_inputs(window, cx);
-                    window.blur(cx);
-                }))
-                .child(Input::new(&input.pos_x)),
-        )
+        .child(pos_input(&input.pos_x, cx))
         .child(meta_label("Pos Y", cx))
-        .child(
-            div()
-                .w_12()
-                .on_action(cx.listener(|this, _: &Enter, window, cx| {
-                    this.commit_selected_cue_inputs(window, cx);
-                    window.blur(cx);
-                }))
-                .on_action(cx.listener(|this, _: &Escape, window, cx| {
-                    this.sync_selected_cue_inputs(window, cx);
-                    window.blur(cx);
-                }))
-                .child(Input::new(&input.pos_y)),
-        )
+        .child(pos_input(&input.pos_y, cx))
 }
 
 fn meta_label(text: &'static str, cx: &Context<YttmApp>) -> impl IntoElement {
@@ -336,6 +312,20 @@ fn meta_label(text: &'static str, cx: &Context<YttmApp>) -> impl IntoElement {
         .w_12()
         .text_color(cx.theme().muted_foreground)
         .child(text)
+}
+
+fn pos_input(input: &Entity<InputBaseState<InputMode>>, cx: &Context<YttmApp>) -> impl IntoElement {
+    div()
+        .w_12()
+        .on_action(cx.listener(|this, _: &Enter, window, cx| {
+            this.commit_selected_cue_inputs(window, cx);
+            window.blur(cx);
+        }))
+        .on_action(cx.listener(|this, _: &Escape, window, cx| {
+            this.sync_selected_cue_inputs(window, cx);
+            window.blur(cx);
+        }))
+        .child(Input::new(input))
 }
 
 fn time_input(
