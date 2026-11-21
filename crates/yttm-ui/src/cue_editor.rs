@@ -32,12 +32,16 @@ pub fn render_editor_area(
         .border_1()
         .border_color(cx.theme().border)
         .bg(cx.theme().muted)
-        .child(render_cue_editor_toolbar(selected_cue, cx))
+        .child(render_cue_editor_toolbar(cues.len(), selected_cue, cx))
         .child(render_cue_table(cues, selected_cue, cx))
         .child(render_selected_details(selected, input, cx))
 }
 
-fn render_cue_editor_toolbar(selected_cue: Option<u64>, cx: &Context<YttmApp>) -> impl IntoElement {
+fn render_cue_editor_toolbar(
+    cue_count: usize,
+    selected_cue: Option<u64>,
+    cx: &Context<YttmApp>,
+) -> impl IntoElement {
     div()
         .id("cue-editor-toolbar")
         .flex()
@@ -52,6 +56,15 @@ fn render_cue_editor_toolbar(selected_cue: Option<u64>, cx: &Context<YttmApp>) -
         .child(add_cue_below_button(cx, selected_cue))
         .child(duplicate_cue_button(cx, selected_cue))
         .child(delete_cue_button(cx, selected_cue))
+        .child(div().flex_1())
+        .child(div().text_color(cx.theme().muted_foreground).child(format!(
+            "Total: {}",
+            if cue_count == 1 {
+                "1 entry".to_owned()
+            } else {
+                format!("{cue_count} entries")
+            }
+        )))
 }
 
 fn render_cue_table(
@@ -106,7 +119,7 @@ fn render_cue_rows(
                     .flex()
                     .justify_center()
                     .text_color(cx.theme().muted_foreground)
-                    .child("No cues yet - press + to add one."),
+                    .child("CLick [+] to add subtitle"),
             )
         })
         .children(cues.iter().map(|cue| render_cue_row(cue, selected_cue, cx)))
@@ -204,13 +217,7 @@ fn render_selected_details(
                     .child(render_pos_fields(input, cx)),
             )
             .child(render_subtitle_field(input, cx));
-    } else {
-        details = details.child(
-            div()
-                .text_color(cx.theme().muted_foreground)
-                .child("No cue selected"),
-        );
-    }
+    };
     details
 }
 
