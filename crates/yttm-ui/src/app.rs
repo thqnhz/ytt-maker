@@ -16,6 +16,7 @@ pub struct YttmApp {
     pub input: YttmInput,
     next_cue_id: u64,
     pub(crate) selected_cue: Option<u64>,
+    pub(crate) cue_list_scroll: ScrollHandle,
 }
 
 impl YttmApp {
@@ -33,6 +34,7 @@ impl YttmApp {
             },
             theme: YttmTheme::new(),
             input: YttmInput::new(window, cx),
+            cue_list_scroll: ScrollHandle::new(),
         }
     }
 

@@ -19,6 +19,7 @@ pub fn render_editor_area(
     cues: &[Cue],
     selected_cue: Option<u64>,
     input: &YttmInput,
+    cue_list_scroll: &ScrollHandle,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
     let selected = selected_cue.and_then(|id| cues.iter().find(|cue| cue.id == id));
@@ -33,7 +34,7 @@ pub fn render_editor_area(
         .border_color(cx.theme().border)
         .bg(cx.theme().muted)
         .child(render_cue_editor_toolbar(cues.len(), selected_cue, cx))
-        .child(render_cue_table(cues, selected_cue, cx))
+        .child(render_cue_table(cues, selected_cue, cue_list_scroll, cx))
         .child(render_selected_details(selected, input, cx))
 }
 
@@ -70,6 +71,7 @@ fn render_cue_editor_toolbar(
 fn render_cue_table(
     cues: &[Cue],
     selected_cue: Option<u64>,
+    cue_list_scroll: &ScrollHandle,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
     div()
@@ -78,7 +80,7 @@ fn render_cue_table(
         .flex_1()
         .min_h_0()
         .child(render_cue_header(cx))
-        .child(render_cue_rows(cues, selected_cue, cx))
+        .child(render_cue_rows(cues, selected_cue, cue_list_scroll, cx))
 }
 
 fn render_cue_header(cx: &Context<YttmApp>) -> impl IntoElement {
@@ -101,8 +103,13 @@ fn render_cue_header(cx: &Context<YttmApp>) -> impl IntoElement {
 fn render_cue_rows(
     cues: &[Cue],
     selected_cue: Option<u64>,
+    cue_list_scroll: &ScrollHandle,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
+    if let Some(ix) = selected_cue.and_then(|id| cues.iter().position(|cue| cue.id == id)) {
+        cue_list_scroll.scroll_to_item(ix);
+    }
+
     div()
         .id("cue-rows")
         .flex()
@@ -110,6 +117,7 @@ fn render_cue_rows(
         .flex_1()
         .min_h_0()
         .overflow_y_scroll()
+        .track_scroll(cue_list_scroll)
         .when(cues.is_empty(), |el| {
             el.child(
                 div()
