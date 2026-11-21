@@ -284,13 +284,7 @@ fn render_pos_fields(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoEleme
             div()
                 .w_12()
                 .on_action(cx.listener(|this, _: &Enter, window, cx| {
-                    if let Some(id) = this.selected_cue {
-                        let v = this.input.pos_x.read(cx).value().to_string();
-                        if let Some(cue) = this.document.cues.iter_mut().find(|c| c.id == id) {
-                            cue.pos_x = yttm_input::parse_opt_i32(&v);
-                        }
-                    }
-                    this.sync_selected_cue_inputs(window, cx);
+                    this.commit_selected_cue_inputs(window, cx);
                     window.blur(cx);
                 }))
                 .on_action(cx.listener(|this, _: &Escape, window, cx| {
@@ -304,13 +298,7 @@ fn render_pos_fields(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoEleme
             div()
                 .w_12()
                 .on_action(cx.listener(|this, _: &Enter, window, cx| {
-                    if let Some(id) = this.selected_cue {
-                        let v = this.input.pos_y.read(cx).value().to_string();
-                        if let Some(cue) = this.document.cues.iter_mut().find(|c| c.id == id) {
-                            cue.pos_y = yttm_input::parse_opt_i32(&v);
-                        }
-                    }
-                    this.sync_selected_cue_inputs(window, cx);
+                    this.commit_selected_cue_inputs(window, cx);
                     window.blur(cx);
                 }))
                 .on_action(cx.listener(|this, _: &Escape, window, cx| {
@@ -332,16 +320,7 @@ fn start_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElemen
     div()
         .w_24()
         .on_action(cx.listener(|this, _: &Enter, window, cx| {
-            if let Some(id) = this.selected_cue {
-                let value = this.input.start.read(cx).value().to_string();
-                if let Some(ms) = yttm_input::parse_ms(&value)
-                    && let Some(cue) = this.document.cues.iter_mut().find(|c| c.id == id)
-                {
-                    cue.start_ms = ms;
-                    this.sort_cues();
-                }
-            }
-            this.sync_selected_cue_inputs(window, cx);
+            this.commit_selected_cue_inputs(window, cx);
             window.blur(cx);
         }))
         .on_action(cx.listener(|this, _: &Escape, window, cx| {
@@ -355,15 +334,7 @@ fn end_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement 
     div()
         .w_24()
         .on_action(cx.listener(|this, _: &Enter, window, cx| {
-            if let Some(id) = this.selected_cue {
-                let value = this.input.end.read(cx).value().to_string();
-                if let Some(ms) = yttm_input::parse_ms(&value)
-                    && let Some(cue) = this.document.cues.iter_mut().find(|c| c.id == id)
-                {
-                    cue.end_ms = ms;
-                }
-            }
-            this.sync_selected_cue_inputs(window, cx);
+            this.commit_selected_cue_inputs(window, cx);
             window.blur(cx);
         }))
         .on_action(cx.listener(|this, _: &Escape, window, cx| {
