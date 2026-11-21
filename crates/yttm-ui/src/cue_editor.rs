@@ -50,7 +50,7 @@ fn render_cue_editor_toolbar(
         .px_2()
         .h_8()
         .border_b_1()
-        .border_color(cx.theme().border)
+        .border_color(cx.theme().background)
         .child(add_cue_button(cx))
         .child(add_cue_above_button(cx, selected_cue))
         .child(add_cue_below_button(cx, selected_cue))
@@ -204,7 +204,7 @@ fn render_selected_details(
         .px_3()
         .py_2()
         .border_t_1()
-        .border_color(cx.theme().border);
+        .border_color(cx.theme().background);
 
     if let Some(cue) = selected {
         details = details
@@ -237,9 +237,9 @@ fn render_time_fields(cue: &Cue, input: &YttmInput, cx: &Context<YttmApp>) -> im
         .flex()
         .items_center()
         .gap_2()
-        .child(meta_label("Start", cx))
+        .child(meta_label("Start:", cx))
         .child(time_input(&input.start, cx))
-        .child(meta_label("End", cx))
+        .child(meta_label("End:", cx))
         .child(time_input(&input.end, cx))
         .child(duration)
 }
