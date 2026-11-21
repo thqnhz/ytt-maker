@@ -10,7 +10,7 @@ pub fn add_cue_button(cx: &Context<YttmApp>) -> Button {
     Button::new("add-cue")
         .icon(IconName::Plus)
         .ghost()
-        .tooltip("Add cue")
+        .tooltip("Add subtitle")
         .on_click(cx.listener(|this, _, window, cx| {
             this.append_cue();
             this.sync_selected_cue_inputs(window, cx);
@@ -23,7 +23,7 @@ pub fn add_cue_above_button(cx: &Context<YttmApp>, selected_cue: Option<u64>) ->
     Button::new("add-cue-above")
         .icon(IconName::ArrowUp)
         .ghost()
-        .tooltip("Add cue above selection")
+        .tooltip("Add subtitle above selection")
         .disabled(selected_cue.is_none())
         .on_click(cx.listener(|this, _, window, cx| {
             this.add_cue_above_selected();
@@ -37,7 +37,7 @@ pub fn add_cue_below_button(cx: &Context<YttmApp>, selected_cue: Option<u64>) ->
     Button::new("add-cue-below")
         .icon(IconName::ArrowDown)
         .ghost()
-        .tooltip("Add cue below selection")
+        .tooltip("Add subtitle below selection")
         .disabled(selected_cue.is_none())
         .on_click(cx.listener(|this, _, window, cx| {
             this.add_cue_below_selected();
@@ -51,7 +51,7 @@ pub fn duplicate_cue_button(cx: &Context<YttmApp>, selected_cue: Option<u64>) ->
     Button::new("duplicate-cue")
         .icon(IconName::Copy)
         .ghost()
-        .tooltip("Duplicate selected cue")
+        .tooltip("Duplicate selected subtitle")
         .disabled(selected_cue.is_none())
         .on_click(cx.listener(|this, _, window, cx| {
             this.duplicate_selected_cue();
@@ -63,9 +63,9 @@ pub fn duplicate_cue_button(cx: &Context<YttmApp>, selected_cue: Option<u64>) ->
 
 pub fn delete_cue_button(cx: &Context<YttmApp>, selected_cue: Option<u64>) -> Button {
     Button::new("delete-cue")
-        .icon(IconName::Minus)
+        .icon(IconName::Trash)
         .ghost()
-        .tooltip("Delete selected cue")
+        .tooltip("Delete selected subtitle")
         .disabled(selected_cue.is_none())
         .on_click(cx.listener(|this, _, window, cx| {
             this.delete_selected_cue();

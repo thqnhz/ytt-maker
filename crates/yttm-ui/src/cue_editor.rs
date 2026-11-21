@@ -119,7 +119,7 @@ fn render_cue_rows(
                     .flex()
                     .justify_center()
                     .text_color(cx.theme().muted_foreground)
-                    .child("CLick [+] to add subtitle"),
+                    .child("Click [+] to add subtitle"),
             )
         })
         .children(cues.iter().map(|cue| render_cue_row(cue, selected_cue, cx)))
