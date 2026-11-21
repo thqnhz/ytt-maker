@@ -28,23 +28,14 @@ fn no_hairline_resize_appearance() -> ResizeHandleRenderer {
         };
 
         if length > px(0.5) {
-            let pill = match handle.axis() {
-                Axis::Horizontal => div()
-                    .flex_none()
-                    .rounded(cx.theme().radius_full())
-                    .bg(cx.theme().muted_foreground)
-                    .opacity(opacity)
-                    .w(px(4.))
-                    .h(length)
-                    .ml(px(4.) * -0.5),
-                Axis::Vertical => div()
-                    .flex_none()
-                    .rounded(cx.theme().radius_full())
-                    .bg(cx.theme().muted_foreground)
-                    .opacity(opacity)
-                    .h(px(4.))
-                    .w(length)
-                    .mt(px(4.) * -0.5),
+            let mut pill = div()
+                .flex_none()
+                .rounded(cx.theme().radius_full())
+                .bg(cx.theme().muted_foreground)
+                .opacity(opacity);
+            pill = match handle.axis() {
+                Axis::Horizontal => pill.w(px(4.)).h(length).ml(px(4.) * -0.5),
+                Axis::Vertical => pill.h(px(4.)).w(length).mt(px(4.) * -0.5),
             };
             line = line.child(pill);
         }
