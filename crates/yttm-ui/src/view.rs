@@ -175,13 +175,42 @@ impl YttmApp {
     }
 
     fn render_video_area(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let screen = div()
-            .id("video-screen")
+        let subtitle_text = self.selected_cue.and_then(|id| {
+            self.document
+                .cues
+                .iter()
+                .find(|cue| cue.id == id)
+                .map(|cue| cue.text.clone())
+                .filter(|text| !text.trim().is_empty())
+        });
+
+        let mut subtitle_bar = div()
+            .w_full()
+            .min_h(px(40.))
             .flex()
             .items_center()
             .justify_center()
+            .pb_3()
+            .px_4();
+        if let Some(text) = subtitle_text {
+            subtitle_bar = subtitle_bar.child(div().text_color(gpui::white()).child(text));
+        }
+
+        let screen = div()
+            .id("video-screen")
+            .flex()
+            .flex_col()
             .bg(gpui::black())
-            .child(div().text_color(gpui::white()).child("No video loaded"));
+            .child(
+                div()
+                    .flex()
+                    .flex_1()
+                    .min_h_0()
+                    .items_center()
+                    .justify_center()
+                    .child(div().text_color(gpui::white()).child("No video loaded")),
+            )
+            .child(subtitle_bar);
 
         let content = match self.workspace.layout {
             WorkspaceLayout::SideBySide => div()
