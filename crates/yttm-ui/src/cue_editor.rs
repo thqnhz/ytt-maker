@@ -1,8 +1,10 @@
 use gpui_kit::assets::IconName;
+use gpui_kit::base::input::InputBaseState;
 use gpui_kit::component::ActiveTheme as _;
 use gpui_kit::component::button::*;
-use gpui_kit::component::input::{Enter, Escape, Input, Textarea};
+use gpui_kit::component::input::{Enter, Escape, Input, InputMode, Textarea};
 use gpui_kit::component::*;
+use gpui_kit::prelude::*;
 use gpui_kit::*;
 
 use yttm_core::Cue;
@@ -28,85 +30,87 @@ pub fn render_editor_area(
         .border_1()
         .border_color(cx.theme().border)
         .bg(cx.theme().muted)
-        .child(
-            div()
-                .id("cue-editor-toolbar")
-                .flex()
-                .items_center()
-                .gap_1()
-                .px_2()
-                .h_8()
-                .border_b_1()
-                .border_color(cx.theme().border)
-                .child(
-                    Button::new("add-cue")
-                        .icon(IconName::Plus)
-                        .ghost()
-                        .tooltip("Add cue")
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            this.append_cue();
-                            this.sync_selected_cue_inputs(window, cx);
-                            this.focus_subtitle(window, cx);
-                            cx.notify();
-                        })),
-                )
-                .child(
-                    Button::new("add-cue-above")
-                        .icon(IconName::ArrowUp)
-                        .ghost()
-                        .tooltip("Add cue above selection")
-                        .disabled(selected_cue.is_none())
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            this.add_cue_above_selected();
-                            this.sync_selected_cue_inputs(window, cx);
-                            this.focus_subtitle(window, cx);
-                            cx.notify();
-                        })),
-                )
-                .child(
-                    Button::new("add-cue-below")
-                        .icon(IconName::ArrowDown)
-                        .ghost()
-                        .tooltip("Add cue below selection")
-                        .disabled(selected_cue.is_none())
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            this.add_cue_below_selected();
-                            this.sync_selected_cue_inputs(window, cx);
-                            this.focus_subtitle(window, cx);
-                            cx.notify();
-                        })),
-                )
-                .child(
-                    Button::new("duplicate-cue")
-                        .icon(IconName::Copy)
-                        .ghost()
-                        .tooltip("Duplicate selected cue")
-                        .disabled(selected_cue.is_none())
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            this.duplicate_selected_cue();
-                            this.sync_selected_cue_inputs(window, cx);
-                            this.focus_subtitle(window, cx);
-                            cx.notify();
-                        })),
-                )
-                .child(
-                    Button::new("delete-cue")
-                        .icon(IconName::Minus)
-                        .ghost()
-                        .tooltip("Delete selected cue")
-                        .disabled(selected_cue.is_none())
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            this.delete_selected_cue();
-                            this.sync_selected_cue_inputs(window, cx);
-                            if this.selected_cue.is_some() {
-                                this.focus_subtitle(window, cx);
-                            }
-                            cx.notify();
-                        })),
-                ),
-        )
+        .child(render_cue_editor_toolbar(selected_cue, cx))
         .child(render_cue_table(cues, selected_cue, cx))
         .child(render_selected_details(selected, input, cx))
+}
+
+fn render_cue_editor_toolbar(selected_cue: Option<u64>, cx: &Context<YttmApp>) -> impl IntoElement {
+    div()
+        .id("cue-editor-toolbar")
+        .flex()
+        .items_center()
+        .gap_1()
+        .px_2()
+        .h_8()
+        .border_b_1()
+        .border_color(cx.theme().border)
+        .child(
+            Button::new("add-cue")
+                .icon(IconName::Plus)
+                .ghost()
+                .tooltip("Add cue")
+                .on_click(cx.listener(|this, _, window, cx| {
+                    this.append_cue();
+                    this.sync_selected_cue_inputs(window, cx);
+                    this.focus_subtitle(window, cx);
+                    cx.notify();
+                })),
+        )
+        .child(
+            Button::new("add-cue-above")
+                .icon(IconName::ArrowUp)
+                .ghost()
+                .tooltip("Add cue above selection")
+                .disabled(selected_cue.is_none())
+                .on_click(cx.listener(|this, _, window, cx| {
+                    this.add_cue_above_selected();
+                    this.sync_selected_cue_inputs(window, cx);
+                    this.focus_subtitle(window, cx);
+                    cx.notify();
+                })),
+        )
+        .child(
+            Button::new("add-cue-below")
+                .icon(IconName::ArrowDown)
+                .ghost()
+                .tooltip("Add cue below selection")
+                .disabled(selected_cue.is_none())
+                .on_click(cx.listener(|this, _, window, cx| {
+                    this.add_cue_below_selected();
+                    this.sync_selected_cue_inputs(window, cx);
+                    this.focus_subtitle(window, cx);
+                    cx.notify();
+                })),
+        )
+        .child(
+            Button::new("duplicate-cue")
+                .icon(IconName::Copy)
+                .ghost()
+                .tooltip("Duplicate selected cue")
+                .disabled(selected_cue.is_none())
+                .on_click(cx.listener(|this, _, window, cx| {
+                    this.duplicate_selected_cue();
+                    this.sync_selected_cue_inputs(window, cx);
+                    this.focus_subtitle(window, cx);
+                    cx.notify();
+                })),
+        )
+        .child(
+            Button::new("delete-cue")
+                .icon(IconName::Minus)
+                .ghost()
+                .tooltip("Delete selected cue")
+                .disabled(selected_cue.is_none())
+                .on_click(cx.listener(|this, _, window, cx| {
+                    this.delete_selected_cue();
+                    this.sync_selected_cue_inputs(window, cx);
+                    if this.selected_cue.is_some() {
+                        this.focus_subtitle(window, cx);
+                    }
+                    cx.notify();
+                })),
+        )
 }
 
 fn render_cue_table(
@@ -120,16 +124,7 @@ fn render_cue_table(
         .flex_1()
         .min_h_0()
         .child(render_cue_header(cx))
-        .child(
-            div()
-                .id("cue-rows")
-                .flex()
-                .flex_col()
-                .flex_1()
-                .min_h_0()
-                .overflow_y_scroll()
-                .children(cues.iter().map(|cue| render_cue_row(cue, selected_cue, cx))),
-        )
+        .child(render_cue_rows(cues, selected_cue, cx))
 }
 
 fn render_cue_header(cx: &Context<YttmApp>) -> impl IntoElement {
@@ -147,6 +142,33 @@ fn render_cue_header(cx: &Context<YttmApp>) -> impl IntoElement {
         .child(div().flex_1().min_w_0().child("Subtitle"))
         .child(div().w_16().child("Pos X"))
         .child(div().w_16().child("Pos Y"))
+}
+
+fn render_cue_rows(
+    cues: &[Cue],
+    selected_cue: Option<u64>,
+    cx: &Context<YttmApp>,
+) -> impl IntoElement {
+    div()
+        .id("cue-rows")
+        .flex()
+        .flex_col()
+        .flex_1()
+        .min_h_0()
+        .overflow_y_scroll()
+        .when(cues.is_empty(), |el| {
+            el.child(
+                div()
+                    .id("cue-empty")
+                    .w_full()
+                    .py_4()
+                    .flex()
+                    .justify_center()
+                    .text_color(cx.theme().muted_foreground)
+                    .child("No cues yet - press + to add one."),
+            )
+        })
+        .children(cues.iter().map(|cue| render_cue_row(cue, selected_cue, cx)))
 }
 
 fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -> impl IntoElement {
@@ -268,9 +290,9 @@ fn render_time_fields(cue: &Cue, input: &YttmInput, cx: &Context<YttmApp>) -> im
         .items_center()
         .gap_2()
         .child(meta_label("Start", cx))
-        .child(start_time_input(input, cx))
+        .child(time_input(&input.start, cx))
         .child(meta_label("End", cx))
-        .child(end_time_input(input, cx))
+        .child(time_input(&input.end, cx))
         .child(duration)
 }
 
@@ -316,7 +338,10 @@ fn meta_label(text: &'static str, cx: &Context<YttmApp>) -> impl IntoElement {
         .child(text)
 }
 
-fn start_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
+fn time_input(
+    input: &Entity<InputBaseState<InputMode>>,
+    cx: &Context<YttmApp>,
+) -> impl IntoElement {
     div()
         .w_24()
         .on_action(cx.listener(|this, _: &Enter, window, cx| {
@@ -327,21 +352,7 @@ fn start_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElemen
             this.sync_selected_cue_inputs(window, cx);
             window.blur(cx);
         }))
-        .child(Input::new(&input.start))
-}
-
-fn end_time_input(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
-    div()
-        .w_24()
-        .on_action(cx.listener(|this, _: &Enter, window, cx| {
-            this.commit_selected_cue_inputs(window, cx);
-            window.blur(cx);
-        }))
-        .on_action(cx.listener(|this, _: &Escape, window, cx| {
-            this.sync_selected_cue_inputs(window, cx);
-            window.blur(cx);
-        }))
-        .child(Input::new(&input.end))
+        .child(Input::new(input))
 }
 
 fn render_subtitle_field(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {
