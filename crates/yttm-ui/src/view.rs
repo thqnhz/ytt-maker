@@ -1,14 +1,12 @@
 use std::rc::Rc;
 
-use gpui_kit::assets::IconName;
 use gpui_kit::base::{ResizeHandleRenderer, ResizeHandleState, resizable_panel};
-use gpui_kit::component::button::*;
 use gpui_kit::component::*;
 use gpui_kit::*;
 
 use crate::app::YttmApp;
+use crate::button::{open_button, save_button, toggle_layout_button, toggle_theme_button};
 use crate::cue_editor;
-use crate::theme::*;
 use crate::workspace::*;
 
 fn no_hairline_resize_appearance() -> ResizeHandleRenderer {
@@ -120,12 +118,6 @@ impl Render for YttmApp {
 
 impl YttmApp {
     fn render_top_bar(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let is_dark = cx.theme().mode.is_dark();
-        let theme_tooltip = theme_toggle_tooltip(is_dark);
-        let theme_icon = theme_toggle_icon(is_dark);
-        let layout_tooltip = Workspace::layout_tooltip(self.workspace.layout);
-        let layout_icon = Workspace::layout_icon(self.workspace.layout);
-
         div()
             .flex()
             .items_center()
@@ -140,39 +132,10 @@ impl YttmApp {
                     .flex()
                     .items_center()
                     .gap_1()
-                    .child(
-                        Button::new("open-file")
-                            .icon(IconName::FolderOpen)
-                            .ghost()
-                            .tooltip("Open")
-                            .on_click(|_, _, _| {}),
-                    )
-                    .child(
-                        Button::new("save-file")
-                            .icon(IconName::Save)
-                            .ghost()
-                            .tooltip("Save")
-                            .on_click(|_, _, _| {}),
-                    )
-                    .child(
-                        Button::new("toggle-theme")
-                            .icon(theme_icon)
-                            .ghost()
-                            .tooltip(theme_tooltip)
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                this.theme.toggle_theme(cx);
-                            })),
-                    )
-                    .child(
-                        Button::new("toggle-layout")
-                            .icon(layout_icon)
-                            .ghost()
-                            .tooltip(layout_tooltip)
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                this.workspace.switch_layout();
-                                cx.notify();
-                            })),
-                    ),
+                    .child(open_button())
+                    .child(save_button())
+                    .child(toggle_theme_button(cx))
+                    .child(toggle_layout_button(&self.workspace.layout, cx)),
             )
     }
 
