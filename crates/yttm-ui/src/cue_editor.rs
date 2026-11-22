@@ -11,7 +11,7 @@ use yttm_input::YttmInput;
 use crate::app::YttmApp;
 use crate::button::{
     add_cue_above_button, add_cue_below_button, add_cue_button, commit_changes_button,
-    delete_cue_button, duplicate_cue_button, revert_changes_button,
+    delete_cue_button, duplicate_cue_button, redo_button, revert_changes_button, undo_button,
 };
 use crate::format::*;
 
@@ -20,6 +20,8 @@ pub fn render_editor_area(
     selected_cue: Option<u64>,
     input: &YttmInput,
     cue_list_scroll: &ScrollHandle,
+    can_undo: bool,
+    can_redo: bool,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
     let selected = selected_cue.and_then(|id| cues.iter().find(|cue| cue.id == id));
@@ -33,7 +35,13 @@ pub fn render_editor_area(
         .border_1()
         .border_color(cx.theme().border)
         .bg(cx.theme().muted)
-        .child(render_cue_editor_toolbar(cues.len(), selected_cue, cx))
+        .child(render_cue_editor_toolbar(
+            cues.len(),
+            selected_cue,
+            can_undo,
+            can_redo,
+            cx,
+        ))
         .child(render_cue_table(cues, selected_cue, cue_list_scroll, cx))
         .child(render_selected_details(selected, input, cx))
 }
@@ -41,6 +49,8 @@ pub fn render_editor_area(
 fn render_cue_editor_toolbar(
     cue_count: usize,
     selected_cue: Option<u64>,
+    can_undo: bool,
+    can_redo: bool,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
     div()
@@ -57,6 +67,8 @@ fn render_cue_editor_toolbar(
         .child(add_cue_below_button(cx, selected_cue))
         .child(duplicate_cue_button(cx, selected_cue))
         .child(delete_cue_button(cx, selected_cue))
+        .child(undo_button(cx, !can_undo))
+        .child(redo_button(cx, !can_redo))
         .child(div().flex_1())
         .child(div().text_color(cx.theme().muted_foreground).child(format!(
             "Total: {}",

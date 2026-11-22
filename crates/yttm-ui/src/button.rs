@@ -81,6 +81,28 @@ pub fn delete_cue_button(cx: &Context<YttmApp>, selected_cue: Option<u64>) -> Bu
         }))
 }
 
+pub fn undo_button(cx: &Context<YttmApp>, disabled: bool) -> Button {
+    Button::new("undo")
+        .icon(IconName::Undo2)
+        .ghost()
+        .tooltip("Undo")
+        .disabled(disabled)
+        .on_click(cx.listener(|this, _, window, cx| {
+            this.undo(window, cx);
+        }))
+}
+
+pub fn redo_button(cx: &Context<YttmApp>, disabled: bool) -> Button {
+    Button::new("redo")
+        .icon(IconName::Redo2)
+        .ghost()
+        .tooltip("Redo")
+        .disabled(disabled)
+        .on_click(cx.listener(|this, _, window, cx| {
+            this.redo(window, cx);
+        }))
+}
+
 pub fn commit_changes_button(cx: &Context<YttmApp>) -> Button {
     Button::new("commit-cue")
         .icon(IconName::Check)

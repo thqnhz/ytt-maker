@@ -5,9 +5,16 @@ use gpui_kit::component::*;
 use gpui_kit::*;
 
 use crate::theme::YttmTheme;
+use crate::view::{Redo, Undo};
 use crate::workspace::{Workspace, WorkspaceLayout, WorkspaceSplit};
 use yttm_core::{Cue, Document};
 use yttm_input::YttmInput;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct EditorSnapshot {
+    document: Document,
+    selected_cue: Option<u64>,
+}
 
 pub struct YttmApp {
     pub document: Document,
@@ -17,6 +24,8 @@ pub struct YttmApp {
     next_cue_id: u64,
     pub(crate) selected_cue: Option<u64>,
     pub(crate) cue_list_scroll: ScrollHandle,
+    undo_stack: Vec<EditorSnapshot>,
+    redo_stack: Vec<EditorSnapshot>,
 }
 
 impl YttmApp {
@@ -35,6 +44,8 @@ impl YttmApp {
             theme: YttmTheme::new(),
             input: YttmInput::new(window, cx),
             cue_list_scroll: ScrollHandle::new(),
+            undo_stack: Vec::new(),
+            redo_stack: Vec::new(),
         }
     }
 
@@ -55,6 +66,7 @@ impl YttmApp {
     }
 
     pub fn commit_selected_cue_inputs(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let before = self.snapshot();
         let Some(id) = self.selected_cue else {
             self.sync_selected_cue_inputs(window, cx);
             return;
@@ -88,6 +100,7 @@ impl YttmApp {
 
         self.sync_selected_cue_inputs(window, cx);
         cx.notify();
+        self.push_undo(before);
     }
 
     pub fn focus_subtitle(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -98,27 +111,33 @@ impl YttmApp {
 
     /// Append a cue entry at the end
     pub fn append_cue(&mut self) {
+        let before = self.snapshot();
         let start_ms = self.document.cues.last().map(|cue| cue.end_ms).unwrap_or(0);
         self.insert_cue(start_ms, start_ms + 2_000);
+        self.push_undo(before);
     }
 
     pub fn add_cue_above_selected(&mut self) {
         let Some(selected) = self.selected_cue() else {
             return;
         };
+        let before = self.snapshot();
 
         let end_ms = selected.start_ms;
         let start_ms = end_ms.saturating_sub(2_000);
         self.insert_cue(start_ms, end_ms);
+        self.push_undo(before);
     }
 
     pub fn add_cue_below_selected(&mut self) {
         let Some(selected) = self.selected_cue() else {
             return;
         };
+        let before = self.snapshot();
 
         let start_ms = selected.end_ms;
         self.insert_cue(start_ms, start_ms + 2_000);
+        self.push_undo(before);
     }
 
     pub fn duplicate_selected_cue(&mut self) {
@@ -128,6 +147,7 @@ impl YttmApp {
         let Some(cue) = self.document.cues.iter().find(|c| c.id == id) else {
             return;
         };
+        let before = self.snapshot();
         let mut new_cue = cue.clone();
         new_cue.id = self.next_cue_id;
 
@@ -135,16 +155,18 @@ impl YttmApp {
         self.sort_cues();
         self.selected_cue = Some(self.next_cue_id);
         self.next_cue_id += 1;
+        self.push_undo(before);
     }
 
     pub fn delete_selected_cue(&mut self) {
-        let Some(selected_id) = self.selected_cue else {
+        if self.selected_cue.is_none() {
             return;
-        };
+        }
         let Some(ix) = self.selected_index() else {
             self.selected_cue = None;
             return;
         };
+        let before = self.snapshot();
 
         self.document.cues.remove(ix);
 
@@ -158,7 +180,31 @@ impl YttmApp {
             // Non-first entry -> to above entry
             Some(self.document.cues[ix - 1].id)
         };
-        let _ = selected_id;
+        self.push_undo(before);
+    }
+
+    pub fn can_undo(&self) -> bool {
+        !self.undo_stack.is_empty()
+    }
+
+    pub fn can_redo(&self) -> bool {
+        !self.redo_stack.is_empty()
+    }
+
+    pub fn undo(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(snapshot) = self.undo_stack.pop() else {
+            return;
+        };
+        self.redo_stack.push(self.snapshot());
+        self.restore_snapshot(snapshot, window, cx);
+    }
+
+    pub fn redo(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(snapshot) = self.redo_stack.pop() else {
+            return;
+        };
+        self.undo_stack.push(self.snapshot());
+        self.restore_snapshot(snapshot, window, cx);
     }
 
     pub fn run() {
@@ -181,6 +227,12 @@ impl YttmApp {
                 Theme::update(cx, |theme| {
                     theme.font_family = "Inter".into();
                 });
+
+                // Global keybind
+                cx.bind_keys([
+                    KeyBinding::new("ctrl-z", Undo, None),
+                    KeyBinding::new("ctrl-y", Redo, None),
+                ]);
 
                 gpui_kit::open_window(WindowOptions::default(), cx, |window, cx| {
                     cx.new(|cx| YttmApp::new(window, cx))
@@ -217,5 +269,31 @@ impl YttmApp {
     fn selected_index(&self) -> Option<usize> {
         let id = self.selected_cue?;
         self.document.cues.iter().position(|cue| cue.id == id)
+    }
+
+    fn snapshot(&self) -> EditorSnapshot {
+        EditorSnapshot {
+            document: self.document.clone(),
+            selected_cue: self.selected_cue,
+        }
+    }
+
+    fn push_undo(&mut self, before: EditorSnapshot) {
+        if self.snapshot() != before {
+            self.undo_stack.push(before);
+            self.redo_stack.clear();
+        }
+    }
+
+    fn restore_snapshot(
+        &mut self,
+        snapshot: EditorSnapshot,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.document = snapshot.document;
+        self.selected_cue = snapshot.selected_cue;
+        self.sync_selected_cue_inputs(window, cx);
+        cx.notify();
     }
 }

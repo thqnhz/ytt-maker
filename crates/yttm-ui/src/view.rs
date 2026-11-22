@@ -9,6 +9,8 @@ use crate::button::{open_button, save_button, toggle_layout_button, toggle_theme
 use crate::cue_editor;
 use crate::workspace::*;
 
+gpui_kit::actions!(yttm, [Undo, Redo]);
+
 fn no_hairline_resize_appearance() -> ResizeHandleRenderer {
     Rc::new(|handle, _window, cx| {
         let (length, opacity) = match handle.state() {
@@ -66,6 +68,8 @@ impl Render for YttmApp {
                                 self.selected_cue,
                                 &self.input,
                                 &self.cue_list_scroll,
+                                self.can_undo(),
+                                self.can_redo(),
                                 cx,
                             ),
                         ),
@@ -90,6 +94,8 @@ impl Render for YttmApp {
                                     self.selected_cue,
                                     &self.input,
                                     &self.cue_list_scroll,
+                                    self.can_undo(),
+                                    self.can_redo(),
                                     cx,
                                 ),
                             ),
@@ -113,6 +119,8 @@ impl Render for YttmApp {
                     .p_3()
                     .child(workspace),
             )
+            .on_action(cx.listener(|this, _: &Undo, window, cx| this.undo(window, cx)))
+            .on_action(cx.listener(|this, _: &Redo, window, cx| this.redo(window, cx)))
     }
 }
 
