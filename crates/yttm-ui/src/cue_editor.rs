@@ -10,8 +10,8 @@ use yttm_input::YttmInput;
 
 use crate::app::YttmApp;
 use crate::button::{
-    add_cue_above_button, add_cue_below_button, add_cue_button, commit_cue_button,
-    delete_cue_button, duplicate_cue_button, revert_cue_button,
+    add_cue_above_button, add_cue_below_button, add_cue_button, commit_changes_button,
+    delete_cue_button, duplicate_cue_button, revert_changes_button,
 };
 use crate::format::*;
 
@@ -317,7 +317,7 @@ fn render_subtitle_field(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoE
             div()
                 .flex()
                 .gap_2()
-                .child(revert_cue_button(cx))
-                .child(commit_cue_button(cx)),
+                .child(revert_changes_button(cx))
+                .child(commit_changes_button(cx)),
         )
 }

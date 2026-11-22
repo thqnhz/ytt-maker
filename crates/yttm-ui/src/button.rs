@@ -81,7 +81,7 @@ pub fn delete_cue_button(cx: &Context<YttmApp>, selected_cue: Option<u64>) -> Bu
         }))
 }
 
-pub fn commit_cue_button(cx: &Context<YttmApp>) -> Button {
+pub fn commit_changes_button(cx: &Context<YttmApp>) -> Button {
     Button::new("commit-cue")
         .icon(IconName::Check)
         .ghost()
@@ -93,7 +93,7 @@ pub fn commit_cue_button(cx: &Context<YttmApp>) -> Button {
         }))
 }
 
-pub fn revert_cue_button(cx: &Context<YttmApp>) -> Button {
+pub fn revert_changes_button(cx: &Context<YttmApp>) -> Button {
     Button::new("revert-cue")
         .icon(IconName::Close)
         .ghost()
