@@ -3,11 +3,11 @@
 This list is not exhausted
 
 - [ ] Video player
-    - [ ] Play from system file
+    - [x] Play from system file
     - [ ] Play from YouTube link???
     - [ ] Player functionalities
-        - [ ] Play/pause
-        - [ ] Playhead (slider whatever it's called)
+        - [x] Play/pause
+        - [x] Playhead (slider whatever it's called)
         - [ ] Skip forward/backward some seconds
         - [ ] Frame stepper
         - [ ] Volume control?
