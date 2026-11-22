@@ -128,12 +128,14 @@ pub fn revert_changes_button(cx: &Context<YttmApp>) -> Button {
         }))
 }
 
-pub fn open_button() -> Button {
+pub fn open_button(cx: &Context<YttmApp>) -> Button {
     Button::new("open-file")
         .icon(IconName::FolderOpen)
         .ghost()
-        .tooltip("Open")
-        .on_click(|_, _, _| {})
+        .tooltip("Open video")
+        .on_click(cx.listener(|this, _, _, cx| {
+            this.open_video(cx);
+        }))
 }
 
 pub fn save_button() -> Button {

@@ -1,0 +1,13 @@
+[package]
+name = "yttm-playback"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license-file.workspace = true
+readme.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+gstreamer.workspace = true
+gstreamer-app.workspace = true
+gstreamer-video.workspace = true

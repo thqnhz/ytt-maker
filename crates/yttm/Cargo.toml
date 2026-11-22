@@ -7,4 +7,4 @@ license-file.workspace = true
 readme.workspace = true
 
 [dependencies]
-yttm-ui = { path = "../yttm-ui" }
+yttm-ui.workspace = true

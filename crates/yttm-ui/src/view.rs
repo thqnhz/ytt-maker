@@ -140,7 +140,7 @@ impl YttmApp {
                     .flex()
                     .items_center()
                     .gap_1()
-                    .child(open_button())
+                    .child(open_button(cx))
                     .child(save_button())
                     .child(toggle_theme_button(cx))
                     .child(toggle_layout_button(&self.workspace.layout, cx)),
@@ -169,20 +169,66 @@ impl YttmApp {
             subtitle_bar = subtitle_bar.child(div().text_color(gpui::white()).child(text));
         }
 
+        let center_label = self
+            .video
+            .file_name()
+            .unwrap_or_else(|| "No video loaded".to_owned());
+
+        let mut controls = div()
+            .w_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .gap_2()
+            .py_1()
+            .text_color(gpui::white());
+        if self.video.path.is_some() {
+            let play_label = if self.video.playing { "Pause" } else { "Play" };
+            controls = controls.child(
+                div()
+                    .id("video-play-toggle")
+                    .cursor_pointer()
+                    .px_2()
+                    .py_1()
+                    .rounded(cx.theme().radius)
+                    .bg(gpui::rgba(0xffffff22))
+                    .hover(|s| s.bg(gpui::rgba(0xffffff33)))
+                    .child(play_label)
+                    .on_click(cx.listener(|this, _, _, cx| {
+                        this.toggle_video_playback(cx);
+                    })),
+            );
+        }
+
+        let video_content = if let Some(frame) = &self.video_frame {
+            div()
+                .flex()
+                .flex_1()
+                .min_h_0()
+                .items_center()
+                .justify_center()
+                .child(
+                    img(ImageSource::Render(frame.clone()))
+                        .size_full()
+                        .object_fit(ObjectFit::Contain),
+                )
+        } else {
+            div()
+                .flex()
+                .flex_1()
+                .min_h_0()
+                .items_center()
+                .justify_center()
+                .child(div().text_color(gpui::white()).child(center_label))
+        };
+
         let screen = div()
             .id("video-screen")
             .flex()
             .flex_col()
             .bg(gpui::black())
-            .child(
-                div()
-                    .flex()
-                    .flex_1()
-                    .min_h_0()
-                    .items_center()
-                    .justify_center()
-                    .child(div().text_color(gpui::white()).child("No video loaded")),
-            )
+            .child(video_content)
+            .child(controls)
             .child(subtitle_bar);
 
         let content = match self.workspace.layout {

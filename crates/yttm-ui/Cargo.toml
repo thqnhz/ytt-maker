@@ -8,6 +8,9 @@ readme.workspace = true
 
 [dependencies]
 gpui-kit.workspace = true
+image.workspace = true
+smallvec.workspace = true
 
-yttm-core = { path = "../yttm-core" }
-yttm-input = { path = "../yttm-input" }
+yttm-core.workspace = true
+yttm-input.workspace = true
+yttm-playback.workspace = true

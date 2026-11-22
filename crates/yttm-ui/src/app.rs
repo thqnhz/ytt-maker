@@ -1,14 +1,19 @@
 use std::borrow::Cow;
+use std::sync::Arc;
+use std::time::Duration;
 
 use gpui_kit::base::ResizableState;
 use gpui_kit::component::*;
 use gpui_kit::*;
+use image::{Frame, RgbaImage};
+use smallvec::SmallVec;
 
 use crate::theme::YttmTheme;
 use crate::view::{Redo, Undo};
 use crate::workspace::{Workspace, WorkspaceLayout, WorkspaceSplit};
 use yttm_core::{Cue, Document};
 use yttm_input::YttmInput;
+use yttm_playback::{Player, VideoState};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct EditorSnapshot {
@@ -21,11 +26,15 @@ pub struct YttmApp {
     pub workspace: Workspace,
     pub theme: YttmTheme,
     pub input: YttmInput,
+    pub video: VideoState,
+    pub(crate) player: Option<Player>,
+    pub(crate) video_frame: Option<Arc<RenderImage>>,
     next_cue_id: u64,
     pub(crate) selected_cue: Option<u64>,
     pub(crate) cue_list_scroll: ScrollHandle,
     undo_stack: Vec<EditorSnapshot>,
     redo_stack: Vec<EditorSnapshot>,
+    video_poll_generation: u64,
 }
 
 impl YttmApp {
@@ -43,9 +52,13 @@ impl YttmApp {
             },
             theme: YttmTheme::new(),
             input: YttmInput::new(window, cx),
+            video: VideoState::new(),
+            player: Player::new().ok(),
+            video_frame: None,
             cue_list_scroll: ScrollHandle::new(),
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
+            video_poll_generation: 0,
         }
     }
 
@@ -107,6 +120,112 @@ impl YttmApp {
         self.input.subtitle.update(cx, |state, cx| {
             state.focus(window, cx);
         });
+    }
+
+    pub fn open_video(&mut self, cx: &mut Context<Self>) {
+        let receiver = cx.prompt_for_paths(PathPromptOptions {
+            files: true,
+            directories: false,
+            multiple: false,
+            prompt: Some("Open video".into()),
+        });
+
+        cx.spawn(async move |this, cx| {
+            let Ok(Ok(Some(paths))) = receiver.await else {
+                return;
+            };
+            let Some(path) = paths.into_iter().next() else {
+                return;
+            };
+
+            this.update(cx, |this, cx| {
+                this.video_poll_generation = this.video_poll_generation.wrapping_add(1);
+                this.video.open(path.clone());
+                if let Some(old_frame) = this.video_frame.take() {
+                    cx.drop_image(old_frame, None);
+                }
+                if let Some(player) = &this.player {
+                    let _ = player.open(&path);
+                    let _ = player.pause();
+                }
+                cx.notify();
+            })
+            .ok();
+        })
+        .detach();
+    }
+
+    pub fn toggle_video_playback(&mut self, cx: &mut Context<Self>) {
+        if self.video.path.is_none() {
+            return;
+        }
+
+        let Some(player) = &self.player else {
+            return;
+        };
+
+        if self.video.playing {
+            self.video_poll_generation = self.video_poll_generation.wrapping_add(1);
+            let _ = player.pause();
+            self.video.playing = false;
+            cx.notify();
+        } else {
+            self.video_poll_generation = self.video_poll_generation.wrapping_add(1);
+            let _ = player.play();
+            self.video.playing = true;
+            cx.notify();
+            self.poll_video(self.video_poll_generation, cx);
+        }
+    }
+
+    fn poll_video(&mut self, generation: u64, cx: &mut Context<Self>) {
+        if !self.video.playing || self.video_poll_generation != generation {
+            return;
+        }
+
+        let Some(player) = &self.player else {
+            self.video.playing = false;
+            return;
+        };
+
+        let mut changed = false;
+        if let Some(position_ms) = player.position_ms()
+            && self.video.position_ms != position_ms
+        {
+            self.video.position_ms = position_ms;
+            changed = true;
+        }
+        if let Some(duration_ms) = player.duration_ms()
+            && self.video.duration_ms != Some(duration_ms)
+        {
+            self.video.duration_ms = Some(duration_ms);
+            changed = true;
+        }
+        if let Some(frame) = player.pull_frame()
+            && let Some(img) = RgbaImage::from_raw(frame.width, frame.height, frame.bgra)
+        {
+            let render = Arc::new(RenderImage::new(SmallVec::from_elem(
+                Frame::new(img),
+                1,
+            )));
+            if let Some(old_frame) = self.video_frame.replace(render) {
+                cx.drop_image(old_frame, None);
+            }
+            changed = true;
+        }
+
+        if changed {
+            cx.notify();
+        }
+
+        cx.spawn(async move |this, cx| {
+            cx.background_executor()
+                .timer(Duration::from_millis(33))
+                .await;
+            this.update(cx, |this, cx| this.poll_video(generation, cx))
+                .ok();
+        })
+        .detach();
     }
 
     /// Append a cue entry at the end

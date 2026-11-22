@@ -5,6 +5,7 @@ members = [
     "crates/yttm-core",
     "crates/yttm-ui",
     "crates/yttm-input",
+    "crates/yttm-playback",
 ]
 
 [workspace.package]
@@ -16,3 +17,15 @@ readme = "README.md"
 
 [workspace.dependencies]
 gpui-kit = "0.9.1"
+anyhow = "1"
+gstreamer = "0.25"
+gstreamer-app = "0.25"
+gstreamer-video = "0.25"
+image = { version = "0.25", default-features = false }
+smallvec = "1"
+
+# Local deps
+yttm-core = { path = "crates/yttm-core" }
+yttm-input = { path = "crates/yttm-input" }
+yttm-playback = { path = "crates/yttm-playback" }
+yttm-ui = { path = "crates/yttm-ui" }
