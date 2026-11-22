@@ -52,7 +52,10 @@ jobs:
 
       - name: Install system deps (macOS)
         if: runner.os == 'macOS'
-        run: brew install mpv
+        run: |
+          brew install mpv
+          MPV_PREFIX="$(brew --prefix mpv)"
+          echo "LIBRARY_PATH=$MPV_PREFIX/lib${LIBRARY_PATH:+:$LIBRARY_PATH}" >> "$GITHUB_ENV"
 
       - name: Install system deps (Windows)
         if: runner.os == 'Windows'
@@ -67,8 +70,26 @@ jobs:
           $url = "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/$tag/$asset"
           Invoke-WebRequest $url -OutFile mpv-dev.7z
           7z x mpv-dev.7z -ompv-dev | Out-Null
-          $libDir = Resolve-Path "mpv-dev\\*\\libmpv*\\*" | Select-Object -First 1 -ExpandProperty Path
-          if (-not (Test-Path "$libDir\\libmpv.lib")) { throw "libmpv.lib not found in $libDir" }
+
+          $libCandidates = @("mpv.lib","libmpv.lib","libmpv-2.lib","mpv-2.lib")
+          $libFile = $null
+          foreach ($name in $libCandidates) {
+            $libFile = Get-ChildItem -Path mpv-dev -Recurse -File -Filter $name -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($libFile) { break }
+          }
+          if (-not $libFile) {
+            $libFile = Get-ChildItem -Path mpv-dev -Recurse -File -Include "*mpv*.lib","*mpv*.dll.a" -ErrorAction SilentlyContinue | Select-Object -First 1
+          }
+          if (-not $libFile) {
+            Get-ChildItem -Path mpv-dev -Recurse -File | Select-Object -First 60 FullName
+            throw "mpv import library not found"
+          }
+
+          $libDir = $libFile.Directory.FullName
+          if (-not (Test-Path (Join-Path $libDir "mpv.lib"))) {
+            Copy-Item $libFile.FullName (Join-Path $libDir "mpv.lib")
+          }
+
           Add-Content $env:GITHUB_PATH $libDir
           Add-Content $env:GITHUB_ENV "LIB=$libDir;$env:LIB"
 
