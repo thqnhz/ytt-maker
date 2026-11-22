@@ -148,14 +148,10 @@ impl YttmApp {
     }
 
     fn render_video_area(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let subtitle_text = self.selected_cue.and_then(|id| {
-            self.document
-                .cues
-                .iter()
-                .find(|cue| cue.id == id)
-                .map(|cue| cue.text.clone())
-                .filter(|text| !text.trim().is_empty())
-        });
+        let subtitle_text = self
+            .selected_cue()
+            .map(|cue| cue.text.clone())
+            .filter(|text| !text.trim().is_empty());
 
         let mut subtitle_bar = div()
             .w_full()

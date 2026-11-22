@@ -17,3 +17,7 @@ pub fn format_ms(ms: u64) -> String {
         format!("{mins:02}:{secs:02}.{millis:03}")
     }
 }
+
+pub fn format_opt_i32(value: Option<i32>) -> String {
+    value.map(|v| v.to_string()).unwrap_or_default()
+}

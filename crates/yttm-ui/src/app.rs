@@ -21,12 +21,12 @@ struct EditorSnapshot {
     selected_cue: Option<u64>,
 }
 
-pub struct YttmApp {
-    pub document: Document,
-    pub workspace: Workspace,
-    pub theme: YttmTheme,
-    pub input: YttmInput,
-    pub video: VideoState,
+pub(crate) struct YttmApp {
+    pub(crate) document: Document,
+    pub(crate) workspace: Workspace,
+    pub(crate) theme: YttmTheme,
+    pub(crate) input: YttmInput,
+    pub(crate) video: VideoState,
     pub(crate) player: Option<Player>,
     pub(crate) video_frame: Option<Arc<RenderImage>>,
     next_cue_id: u64,
@@ -62,24 +62,22 @@ impl YttmApp {
         }
     }
 
-    pub fn sync_selected_cue_inputs(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn sync_selected_cue_inputs(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let values = self
-            .selected_cue
-            .and_then(|id| self.document.cues.iter().find(|cue| cue.id == id))
+            .selected_cue()
             .map(|cue| yttm_input::SelectedCueValues {
                 subtitle: cue.text.clone(),
                 start: crate::format::format_ms(cue.start_ms),
                 end: crate::format::format_ms(cue.end_ms),
-                pos_x: cue.pos_x.map(|v| v.to_string()).unwrap_or_default(),
-                pos_y: cue.pos_y.map(|v| v.to_string()).unwrap_or_default(),
+                pos_x: crate::format::format_opt_i32(cue.pos_x),
+                pos_y: crate::format::format_opt_i32(cue.pos_y),
             })
             .unwrap_or_default();
 
         self.input.sync_selected(values, window, cx);
     }
 
-    pub fn commit_selected_cue_inputs(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let before = self.snapshot();
+    pub(crate) fn commit_selected_cue_inputs(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let Some(id) = self.selected_cue else {
             self.sync_selected_cue_inputs(window, cx);
             return;
@@ -91,23 +89,37 @@ impl YttmApp {
         let pos_x = self.input.pos_x.read(cx).value().to_string();
         let pos_y = self.input.pos_y.read(cx).value().to_string();
 
-        let mut should_sort = false;
-        if let Some(cue) = self.document.cues.iter_mut().find(|c| c.id == id) {
-            cue.text = subtitle;
+        let Some(cue) = self.document.cues.iter().find(|c| c.id == id) else {
+            self.sync_selected_cue_inputs(window, cx);
+            return;
+        };
 
-            if let Some(ms) = yttm_input::parse_ms(&start) {
-                cue.start_ms = ms;
-                should_sort = true;
-            }
-            if let Some(ms) = yttm_input::parse_ms(&end) {
-                cue.end_ms = ms;
-            }
+        let next_start = yttm_input::parse_ms(&start).unwrap_or(cue.start_ms);
+        let next_end = yttm_input::parse_ms(&end).unwrap_or(cue.end_ms);
+        let next_pos_x = yttm_input::parse_opt_i32(&pos_x);
+        let next_pos_y = yttm_input::parse_opt_i32(&pos_y);
 
-            cue.pos_x = yttm_input::parse_opt_i32(&pos_x);
-            cue.pos_y = yttm_input::parse_opt_i32(&pos_y);
+        let changed = cue.text != subtitle
+            || cue.start_ms != next_start
+            || cue.end_ms != next_end
+            || cue.pos_x != next_pos_x
+            || cue.pos_y != next_pos_y;
+        if !changed {
+            self.sync_selected_cue_inputs(window, cx);
+            return;
         }
 
-        if should_sort {
+        let before = self.snapshot();
+        let start_changed = cue.start_ms != next_start;
+        if let Some(cue) = self.document.cues.iter_mut().find(|c| c.id == id) {
+            cue.text = subtitle;
+            cue.start_ms = next_start;
+            cue.end_ms = next_end;
+            cue.pos_x = next_pos_x;
+            cue.pos_y = next_pos_y;
+        }
+
+        if start_changed {
             self.sort_cues();
         }
 
@@ -116,13 +128,13 @@ impl YttmApp {
         self.push_undo(before);
     }
 
-    pub fn focus_subtitle(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn focus_subtitle(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.input.subtitle.update(cx, |state, cx| {
             state.focus(window, cx);
         });
     }
 
-    pub fn open_video(&mut self, cx: &mut Context<Self>) {
+    pub(crate) fn open_video(&mut self, cx: &mut Context<Self>) {
         let receiver = cx.prompt_for_paths(PathPromptOptions {
             files: true,
             directories: false,
@@ -155,7 +167,7 @@ impl YttmApp {
         .detach();
     }
 
-    pub fn toggle_video_playback(&mut self, cx: &mut Context<Self>) {
+    pub(crate) fn toggle_video_playback(&mut self, cx: &mut Context<Self>) {
         if self.video.path.is_none() {
             return;
         }
@@ -166,15 +178,17 @@ impl YttmApp {
 
         if self.video.playing {
             self.video_poll_generation = self.video_poll_generation.wrapping_add(1);
-            let _ = player.pause();
-            self.video.playing = false;
-            cx.notify();
+            if player.pause().is_ok() {
+                self.video.playing = false;
+                cx.notify();
+            }
         } else {
             self.video_poll_generation = self.video_poll_generation.wrapping_add(1);
-            let _ = player.play();
-            self.video.playing = true;
-            cx.notify();
-            self.poll_video(self.video_poll_generation, cx);
+            if player.play().is_ok() {
+                self.video.playing = true;
+                cx.notify();
+                self.poll_video(self.video_poll_generation, cx);
+            }
         }
     }
 
@@ -185,6 +199,7 @@ impl YttmApp {
 
         let Some(player) = &self.player else {
             self.video.playing = false;
+            cx.notify();
             return;
         };
 
@@ -228,61 +243,66 @@ impl YttmApp {
         .detach();
     }
 
-    /// Append a cue entry at the end
-    pub fn append_cue(&mut self) {
+    pub(crate) fn select_cue(&mut self, cue_id: u64, window: &mut Window, cx: &mut Context<Self>) {
+        if self.selected_cue == Some(cue_id) {
+            return;
+        }
+        self.selected_cue = Some(cue_id);
+        self.sync_selected_cue_inputs(window, cx);
+        self.focus_subtitle(window, cx);
+        self.scroll_selected_into_view();
+        cx.notify();
+    }
+
+    pub(crate) fn append_cue(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let before = self.snapshot();
         let start_ms = self.document.cues.last().map(|cue| cue.end_ms).unwrap_or(0);
         self.insert_cue(start_ms, start_ms + 2_000);
-        self.push_undo(before);
+        self.finish_cue_mutation(before, window, cx, true);
     }
 
-    pub fn add_cue_above_selected(&mut self) {
-        let Some(selected) = self.selected_cue() else {
+    pub(crate) fn add_cue_above_selected(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some((_, start_ms, end_ms)) = self.selected_cue().map(|cue| {
+            let end_ms = cue.start_ms;
+            (cue.id, end_ms.saturating_sub(2_000), end_ms)
+        }) else {
             return;
         };
         let before = self.snapshot();
-
-        let end_ms = selected.start_ms;
-        let start_ms = end_ms.saturating_sub(2_000);
         self.insert_cue(start_ms, end_ms);
-        self.push_undo(before);
+        self.finish_cue_mutation(before, window, cx, true);
     }
 
-    pub fn add_cue_below_selected(&mut self) {
-        let Some(selected) = self.selected_cue() else {
+    pub(crate) fn add_cue_below_selected(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(start_ms) = self.selected_cue().map(|cue| cue.end_ms) else {
             return;
         };
         let before = self.snapshot();
-
-        let start_ms = selected.end_ms;
         self.insert_cue(start_ms, start_ms + 2_000);
-        self.push_undo(before);
+        self.finish_cue_mutation(before, window, cx, true);
     }
 
-    pub fn duplicate_selected_cue(&mut self) {
-        let Some(id) = self.selected_cue else {
-            return;
-        };
-        let Some(cue) = self.document.cues.iter().find(|c| c.id == id) else {
+    pub(crate) fn duplicate_selected_cue(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(cue) = self.selected_cue().cloned() else {
             return;
         };
         let before = self.snapshot();
-        let mut new_cue = cue.clone();
+        let mut new_cue = cue;
         new_cue.id = self.next_cue_id;
 
         self.document.cues.push(new_cue);
         self.sort_cues();
         self.selected_cue = Some(self.next_cue_id);
         self.next_cue_id += 1;
-        self.push_undo(before);
+        self.finish_cue_mutation(before, window, cx, true);
     }
 
-    pub fn delete_selected_cue(&mut self) {
-        if self.selected_cue.is_none() {
-            return;
-        }
+    pub(crate) fn delete_selected_cue(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let Some(ix) = self.selected_index() else {
-            self.selected_cue = None;
+            if self.selected_cue.take().is_some() {
+                self.sync_selected_cue_inputs(window, cx);
+                cx.notify();
+            }
             return;
         };
         let before = self.snapshot();
@@ -290,27 +310,24 @@ impl YttmApp {
         self.document.cues.remove(ix);
 
         self.selected_cue = if self.document.cues.is_empty() {
-            // Empty -> Unselect
             None
         } else if ix == 0 {
-            // First entry -> keep first entry
             Some(self.document.cues[0].id)
         } else {
-            // Non-first entry -> to above entry
             Some(self.document.cues[ix - 1].id)
         };
-        self.push_undo(before);
+        self.finish_cue_mutation(before, window, cx, self.selected_cue.is_some());
     }
 
-    pub fn can_undo(&self) -> bool {
+    pub(crate) fn can_undo(&self) -> bool {
         !self.undo_stack.is_empty()
     }
 
-    pub fn can_redo(&self) -> bool {
+    pub(crate) fn can_redo(&self) -> bool {
         !self.redo_stack.is_empty()
     }
 
-    pub fn undo(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn undo(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let Some(snapshot) = self.undo_stack.pop() else {
             return;
         };
@@ -318,7 +335,7 @@ impl YttmApp {
         self.restore_snapshot(snapshot, window, cx);
     }
 
-    pub fn redo(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn redo(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let Some(snapshot) = self.redo_stack.pop() else {
             return;
         };
@@ -380,7 +397,7 @@ impl YttmApp {
         self.document.cues.sort_by_key(|cue| (cue.start_ms, cue.id));
     }
 
-    fn selected_cue(&self) -> Option<&Cue> {
+    pub(crate) fn selected_cue(&self) -> Option<&Cue> {
         let id = self.selected_cue?;
         self.document.cues.iter().find(|cue| cue.id == id)
     }
@@ -398,9 +415,36 @@ impl YttmApp {
     }
 
     fn push_undo(&mut self, before: EditorSnapshot) {
-        if self.snapshot() != before {
+        if self.document != before.document || self.selected_cue != before.selected_cue {
             self.undo_stack.push(before);
             self.redo_stack.clear();
+            const MAX_UNDO: usize = 200;
+            if self.undo_stack.len() > MAX_UNDO {
+                let overflow = self.undo_stack.len() - MAX_UNDO;
+                self.undo_stack.drain(0..overflow);
+            }
+        }
+    }
+
+    fn finish_cue_mutation(
+        &mut self,
+        before: EditorSnapshot,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+        focus_subtitle: bool,
+    ) {
+        self.sync_selected_cue_inputs(window, cx);
+        if focus_subtitle {
+            self.focus_subtitle(window, cx);
+        }
+        self.scroll_selected_into_view();
+        cx.notify();
+        self.push_undo(before);
+    }
+
+    fn scroll_selected_into_view(&self) {
+        if let Some(ix) = self.selected_index() {
+            self.cue_list_scroll.scroll_to_item(ix);
         }
     }
 
@@ -413,6 +457,7 @@ impl YttmApp {
         self.document = snapshot.document;
         self.selected_cue = snapshot.selected_cue;
         self.sync_selected_cue_inputs(window, cx);
+        self.scroll_selected_into_view();
         cx.notify();
     }
 }

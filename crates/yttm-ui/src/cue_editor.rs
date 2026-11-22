@@ -118,10 +118,6 @@ fn render_cue_rows(
     cue_list_scroll: &ScrollHandle,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
-    if let Some(ix) = selected_cue.and_then(|id| cues.iter().position(|cue| cue.id == id)) {
-        cue_list_scroll.scroll_to_item(ix);
-    }
-
     div()
         .id("cue-rows")
         .flex()
@@ -179,35 +175,25 @@ fn render_cue_row(cue: &Cue, selected_cue: Option<u64>, cx: &Context<YttmApp>) -
         subtitle = subtitle.flex().flex_col().child(cue.text.clone());
     }
 
-    let pos_x = if let Some(v) = cue.pos_x {
-        div().w_16().child(v.to_string())
-    } else {
-        div()
-            .w_16()
-            .text_color(cx.theme().muted_foreground)
-            .child("-")
-    };
-    let pos_y = if let Some(v) = cue.pos_y {
-        div().w_16().child(v.to_string())
-    } else {
-        div()
-            .w_16()
-            .text_color(cx.theme().muted_foreground)
-            .child("-")
-    };
-
     row.on_click(cx.listener(move |this, _, window, cx| {
-        this.selected_cue = Some(cue_id);
-        this.sync_selected_cue_inputs(window, cx);
-        this.focus_subtitle(window, cx);
-        cx.notify();
+        this.select_cue(cue_id, window, cx);
     }))
     .child(status)
     .child(div().w_24().child(format_ms(cue.start_ms)))
     .child(div().w_24().child(format_ms(cue.end_ms)))
     .child(subtitle)
-    .child(pos_x)
-    .child(pos_y)
+    .child(render_pos_cell(cue.pos_x, cx))
+    .child(render_pos_cell(cue.pos_y, cx))
+}
+
+fn render_pos_cell(value: Option<i32>, cx: &Context<YttmApp>) -> impl IntoElement {
+    let mut cell = div().w_16();
+    if let Some(v) = value {
+        cell = cell.child(v.to_string());
+    } else {
+        cell = cell.text_color(cx.theme().muted_foreground).child("-");
+    }
+    cell
 }
 
 fn render_selected_details(
@@ -282,9 +268,13 @@ fn meta_label(text: &'static str, cx: &Context<YttmApp>) -> impl IntoElement {
         .child(text)
 }
 
-fn pos_input(input: &Entity<InputBaseState<InputMode>>, cx: &Context<YttmApp>) -> impl IntoElement {
+fn cue_input(
+    input: &Entity<InputBaseState<InputMode>>,
+    width: Pixels,
+    cx: &Context<YttmApp>,
+) -> impl IntoElement {
     div()
-        .w_12()
+        .w(width)
         .on_action(cx.listener(|this, _: &Enter, window, cx| {
             this.commit_selected_cue_inputs(window, cx);
             window.blur(cx);
@@ -296,21 +286,15 @@ fn pos_input(input: &Entity<InputBaseState<InputMode>>, cx: &Context<YttmApp>) -
         .child(Input::new(input))
 }
 
+fn pos_input(input: &Entity<InputBaseState<InputMode>>, cx: &Context<YttmApp>) -> impl IntoElement {
+    cue_input(input, px(48.), cx)
+}
+
 fn time_input(
     input: &Entity<InputBaseState<InputMode>>,
     cx: &Context<YttmApp>,
 ) -> impl IntoElement {
-    div()
-        .w_24()
-        .on_action(cx.listener(|this, _: &Enter, window, cx| {
-            this.commit_selected_cue_inputs(window, cx);
-            window.blur(cx);
-        }))
-        .on_action(cx.listener(|this, _: &Escape, window, cx| {
-            this.sync_selected_cue_inputs(window, cx);
-            window.blur(cx);
-        }))
-        .child(Input::new(input))
+    cue_input(input, px(96.), cx)
 }
 
 fn render_subtitle_field(input: &YttmInput, cx: &Context<YttmApp>) -> impl IntoElement {

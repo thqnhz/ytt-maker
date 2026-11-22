@@ -16,10 +16,7 @@ pub fn add_cue_button(cx: &Context<YttmApp>) -> Button {
         .ghost()
         .tooltip("Add subtitle")
         .on_click(cx.listener(|this, _, window, cx| {
-            this.append_cue();
-            this.sync_selected_cue_inputs(window, cx);
-            this.focus_subtitle(window, cx);
-            cx.notify();
+            this.append_cue(window, cx);
         }))
 }
 
@@ -30,10 +27,7 @@ pub fn add_cue_above_button(cx: &Context<YttmApp>, selected_cue: Option<u64>) ->
         .tooltip("Add subtitle above selection")
         .disabled(selected_cue.is_none())
         .on_click(cx.listener(|this, _, window, cx| {
-            this.add_cue_above_selected();
-            this.sync_selected_cue_inputs(window, cx);
-            this.focus_subtitle(window, cx);
-            cx.notify();
+            this.add_cue_above_selected(window, cx);
         }))
 }
 
@@ -44,10 +38,7 @@ pub fn add_cue_below_button(cx: &Context<YttmApp>, selected_cue: Option<u64>) ->
         .tooltip("Add subtitle below selection")
         .disabled(selected_cue.is_none())
         .on_click(cx.listener(|this, _, window, cx| {
-            this.add_cue_below_selected();
-            this.sync_selected_cue_inputs(window, cx);
-            this.focus_subtitle(window, cx);
-            cx.notify();
+            this.add_cue_below_selected(window, cx);
         }))
 }
 
@@ -58,10 +49,7 @@ pub fn duplicate_cue_button(cx: &Context<YttmApp>, selected_cue: Option<u64>) ->
         .tooltip("Duplicate selected subtitle")
         .disabled(selected_cue.is_none())
         .on_click(cx.listener(|this, _, window, cx| {
-            this.duplicate_selected_cue();
-            this.sync_selected_cue_inputs(window, cx);
-            this.focus_subtitle(window, cx);
-            cx.notify();
+            this.duplicate_selected_cue(window, cx);
         }))
 }
 
@@ -72,12 +60,7 @@ pub fn delete_cue_button(cx: &Context<YttmApp>, selected_cue: Option<u64>) -> Bu
         .tooltip("Delete selected subtitle")
         .disabled(selected_cue.is_none())
         .on_click(cx.listener(|this, _, window, cx| {
-            this.delete_selected_cue();
-            this.sync_selected_cue_inputs(window, cx);
-            if this.selected_cue.is_some() {
-                this.focus_subtitle(window, cx);
-            }
-            cx.notify();
+            this.delete_selected_cue(window, cx);
         }))
 }
 
@@ -160,8 +143,8 @@ pub fn toggle_theme_button(cx: &mut Context<YttmApp>) -> Button {
 }
 
 pub fn toggle_layout_button(layout: &WorkspaceLayout, cx: &mut Context<YttmApp>) -> Button {
-    let layout_tooltip = Workspace::layout_tooltip(layout);
-    let layout_icon = Workspace::layout_icon(layout);
+    let layout_tooltip = Workspace::layout_tooltip(*layout);
+    let layout_icon = Workspace::layout_icon(*layout);
 
     Button::new("toggle-layout")
         .icon(layout_icon)
