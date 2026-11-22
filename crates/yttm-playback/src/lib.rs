@@ -13,10 +13,17 @@ pub enum PreviewQuality {
     #[default]
     Quarter,
     Eighth,
+    Potato,
 }
 
 impl PreviewQuality {
-    pub const ALL: [Self; 4] = [Self::Full, Self::Half, Self::Quarter, Self::Eighth];
+    pub const ALL: [Self; 5] = [
+        Self::Full,
+        Self::Half,
+        Self::Quarter,
+        Self::Eighth,
+        Self::Potato,
+    ];
 
     pub fn label(self) -> &'static str {
         match self {
@@ -24,6 +31,7 @@ impl PreviewQuality {
             Self::Half => "1/2",
             Self::Quarter => "1/4",
             Self::Eighth => "1/8",
+            Self::Potato => "1/16",
         }
     }
 
@@ -33,6 +41,7 @@ impl PreviewQuality {
             Self::Half => 2,
             Self::Quarter => 4,
             Self::Eighth => 8,
+            Self::Potato => 16,
         }
     }
 }

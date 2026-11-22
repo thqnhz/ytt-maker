@@ -56,6 +56,7 @@ impl YttmApp {
                 Some("1/2") => PreviewQuality::Half,
                 Some("1/4") => PreviewQuality::Quarter,
                 Some("1/8") => PreviewQuality::Eighth,
+                Some("1/16") => PreviewQuality::Potato,
                 _ => return,
             };
             this.set_preview_quality(quality, cx);
