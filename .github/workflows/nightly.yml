@@ -48,7 +48,29 @@ jobs:
           sudo apt-get install -y \
             libclang-dev libgtk-3-dev libxcb-render0-dev libxcb-shape0-dev \
             libxcb-xfixes0-dev libxkbcommon-dev libssl-dev \
-            libxkbcommon-x11-dev libxcb1-dev
+            libxkbcommon-x11-dev libxcb1-dev libmpv-dev
+
+      - name: Install system deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew install mpv
+
+      - name: Install system deps (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $tag = gh api repos/shinchiro/mpv-winbuild-cmake/releases/latest --jq .tag_name
+          $asset = gh api "repos/shinchiro/mpv-winbuild-cmake/releases/tags/$tag" --jq '.assets[] | select(.name | test("^mpv-dev-x86_64-.*\\.7z$")) | .name' | Select-Object -First 1
+          if (-not $asset) { throw "mpv-dev asset not found" }
+          $url = "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/$tag/$asset"
+          Invoke-WebRequest $url -OutFile mpv-dev.7z
+          7z x mpv-dev.7z -ompv-dev | Out-Null
+          $libDir = Resolve-Path "mpv-dev\\*\\libmpv*\\*" | Select-Object -First 1 -ExpandProperty Path
+          if (-not (Test-Path "$libDir\\libmpv.lib")) { throw "libmpv.lib not found in $libDir" }
+          Add-Content $env:GITHUB_PATH $libDir
+          Add-Content $env:GITHUB_ENV "LIB=$libDir;$env:LIB"
 
       - name: Build
         run: cargo build --release --workspace --target ${{ matrix.target }}
