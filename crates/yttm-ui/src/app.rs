@@ -231,6 +231,20 @@ impl YttmApp {
         }
     }
 
+    pub(crate) fn seek_video_ratio(&mut self, ratio: f32, cx: &mut Context<Self>) {
+        let Some(duration_ms) = self.video.duration_ms else {
+            return;
+        };
+        let Some(player) = &self.player else { return };
+        let ratio = ratio.clamp(0.0, 1.0);
+        let position_ms = (duration_ms as f32 * ratio) as u64;
+        if player.seek_ms(position_ms).is_ok() {
+            self.video.position_ms = position_ms;
+            player.request_render();
+            cx.notify();
+        }
+    }
+
     fn poll_video(&mut self, generation: u64, cx: &mut Context<Self>) {
         if !self.video.playing || self.video_poll_generation != generation {
             return;

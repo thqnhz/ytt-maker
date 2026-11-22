@@ -154,87 +154,56 @@ impl YttmApp {
             .map(|cue| cue.text.clone())
             .filter(|text| !text.trim().is_empty());
 
-        let mut subtitle_bar = div()
-            .w_full()
-            .min_h(px(40.))
+        let center_label = self
+            .video
+            .file_name()
+            .unwrap_or_else(|| "No video loaded".to_owned());
+
+        let video_content = if let Some(frame) = &self.video_frame {
+            div().size_full().child(
+                img(ImageSource::Render(frame.clone()))
+                    .size_full()
+                    .object_fit(ObjectFit::Contain),
+            )
+        } else {
+            div()
+                .size_full()
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(div().text_color(gpui::white()).child(center_label))
+        };
+
+        let mut subtitle_overlay = div()
+            .absolute()
+            .bottom_0()
+            .left_0()
+            .right_0()
             .flex()
             .items_center()
             .justify_center()
             .pb_3()
             .px_4();
         if let Some(text) = subtitle_text {
-            subtitle_bar = subtitle_bar.child(div().text_color(gpui::white()).child(text));
+            subtitle_overlay = subtitle_overlay.child(
+                div()
+                    .px_2()
+                    .py_1()
+                    .rounded(px(4.))
+                    .bg(gpui::rgba(0x00000088))
+                    .text_color(gpui::white())
+                    .child(text),
+            );
         }
-
-        let center_label = self
-            .video
-            .file_name()
-            .unwrap_or_else(|| "No video loaded".to_owned());
-
-        let mut controls = div()
-            .w_full()
-            .flex()
-            .items_center()
-            .justify_center()
-            .gap_2()
-            .py_1()
-            .text_color(gpui::white());
-        if self.video.path.is_some() {
-            let play_label = if self.video.playing { "Pause" } else { "Play" };
-            controls = controls
-                .child(
-                    div()
-                        .id("video-play-toggle")
-                        .cursor_pointer()
-                        .px_2()
-                        .py_1()
-                        .rounded(cx.theme().radius)
-                        .bg(gpui::rgba(0xffffff22))
-                        .hover(|s| s.bg(gpui::rgba(0xffffff33)))
-                        .child(play_label)
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            this.toggle_video_playback(cx);
-                        })),
-                )
-                .child(
-                    div().w(px(64.)).child(
-                        Select::new(&self.preview_quality_select)
-                            .id("video-preview-quality")
-                            .menu_width(px(64.)),
-                    ),
-                );
-        }
-
-        let video_content = if let Some(frame) = &self.video_frame {
-            div()
-                .flex()
-                .flex_1()
-                .min_h_0()
-                .items_center()
-                .justify_center()
-                .child(
-                    img(ImageSource::Render(frame.clone()))
-                        .size_full()
-                        .object_fit(ObjectFit::Contain),
-                )
-        } else {
-            div()
-                .flex()
-                .flex_1()
-                .min_h_0()
-                .items_center()
-                .justify_center()
-                .child(div().text_color(gpui::white()).child(center_label))
-        };
 
         let screen = div()
             .id("video-screen")
-            .flex()
-            .flex_col()
+            .relative()
             .bg(gpui::black())
             .child(video_content)
-            .child(controls)
-            .child(subtitle_bar);
+            .child(subtitle_overlay);
+
+        let controls = self.render_video_controls(cx);
 
         let content = match self.workspace.layout {
             WorkspaceLayout::SideBySide => div()
@@ -246,11 +215,20 @@ impl YttmApp {
                 .min_w_0()
                 .min_h_0()
                 .child(
-                    screen
+                    div()
+                        .flex()
+                        .flex_col()
                         .h_full()
                         .max_w_full()
                         .min_w_0()
-                        .aspect_ratio(16.0 / 9.0),
+                        .child(
+                            screen
+                                .w_full()
+                                .max_h_full()
+                                .min_h_0()
+                                .aspect_ratio(16.0 / 9.0),
+                        )
+                        .child(controls),
                 )
                 .child(div().id("video-side-pane").flex_1().min_w_0().h_full()),
             WorkspaceLayout::Stacked => div()
@@ -268,6 +246,7 @@ impl YttmApp {
                         .min_h_0()
                         .aspect_ratio(16.0 / 9.0),
                 )
+                .child(controls)
                 .child(div().id("video-bottom-pane").flex_1().min_h_0().w_full()),
         };
 
@@ -284,4 +263,153 @@ impl YttmApp {
             .bg(cx.theme().muted)
             .child(content)
     }
+
+    fn render_video_controls(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let has_video = self.video.path.is_some();
+        let play_icon = if self.video.playing {
+            IconName::Pause
+        } else {
+            IconName::Play
+        };
+        let pos_ms = self.video.position_ms;
+        let dur_ms = self.video.duration_ms.unwrap_or(0);
+        let ratio = if dur_ms > 0 {
+            (pos_ms as f32 / dur_ms as f32).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+
+        let seek_track = render_seek_track(has_video, dur_ms, ratio, cx);
+
+        let mut play_btn = div()
+            .id("video-play-toggle")
+            .p_1()
+            .rounded(cx.theme().radius)
+            .text_color(cx.theme().muted_foreground)
+            .child(play_icon);
+        if has_video {
+            play_btn = play_btn
+                .cursor_pointer()
+                .hover(|s| s.bg(cx.theme().muted).text_color(cx.theme().foreground))
+                .on_click(cx.listener(|this, _, _, cx| {
+                    this.toggle_video_playback(cx);
+                }));
+        }
+
+        let time_label = format!(
+            "{} / {}",
+            format_playback_ms(pos_ms),
+            format_playback_ms(dur_ms)
+        );
+
+        div()
+            .id("video-controls")
+            .w_full()
+            .flex()
+            .items_center()
+            .gap_2()
+            .px_2()
+            .py_1()
+            .border_t_1()
+            .border_color(cx.theme().border)
+            .bg(cx.theme().background)
+            .child(play_btn)
+            .child(
+                div()
+                    .text_xs()
+                    .text_color(cx.theme().muted_foreground)
+                    .min_w(px(90.))
+                    .child(time_label),
+            )
+            .child(seek_track)
+            .child(
+                div().w(px(72.)).child(
+                    Select::new(&self.preview_quality_select)
+                        .id("video-preview-quality")
+                        .menu_width(px(72.)),
+                ),
+            )
+    }
+}
+
+fn render_seek_track(
+    has_video: bool,
+    dur_ms: u64,
+    ratio: f32,
+    cx: &mut Context<YttmApp>,
+) -> impl IntoElement + use<> {
+    let seek_bounds: std::rc::Rc<std::cell::Cell<Option<Bounds<Pixels>>>> =
+        std::rc::Rc::new(std::cell::Cell::new(None));
+    let seek_bounds_down = seek_bounds.clone();
+    let seek_bounds_move = seek_bounds.clone();
+    let seek_bounds_up = seek_bounds.clone();
+
+    let seek_fill = div().h_full().bg(cx.theme().primary).w(relative(ratio));
+
+    let mut seek_track = div()
+        .id("video-seek-track")
+        .relative()
+        .flex_1()
+        .h(px(6.))
+        .rounded(px(3.))
+        .bg(cx.theme().border)
+        .overflow_hidden()
+        .child(seek_fill)
+        .child(
+            canvas(
+                move |bounds, _, _| seek_bounds.set(Some(bounds)),
+                |_, _, _, _| {},
+            )
+            .absolute()
+            .size_full(),
+        );
+    if has_video && dur_ms > 0 {
+        seek_track = seek_track
+            .cursor_pointer()
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(move |this, event: &MouseDownEvent, _, cx| {
+                    if let Some(bounds) = seek_bounds_down.get() {
+                        let x: f32 = event.position.x.into();
+                        let left: f32 = bounds.origin.x.into();
+                        let width: f32 = bounds.size.width.into();
+                        if width > 0.0 {
+                            this.seek_video_ratio((x - left) / width, cx);
+                        }
+                    }
+                }),
+            )
+            .on_mouse_move(cx.listener(move |this, event: &MouseMoveEvent, _, cx| {
+                if event.dragging()
+                    && let Some(bounds) = seek_bounds_move.get()
+                {
+                    let x: f32 = event.position.x.into();
+                    let left: f32 = bounds.origin.x.into();
+                    let width: f32 = bounds.size.width.into();
+                    if width > 0.0 {
+                        this.seek_video_ratio((x - left) / width, cx);
+                    }
+                }
+            }))
+            .on_mouse_up(
+                MouseButton::Left,
+                cx.listener(move |this, event: &MouseUpEvent, _, cx| {
+                    if let Some(bounds) = seek_bounds_up.get() {
+                        let x: f32 = event.position.x.into();
+                        let left: f32 = bounds.origin.x.into();
+                        let width: f32 = bounds.size.width.into();
+                        if width > 0.0 {
+                            this.seek_video_ratio((x - left) / width, cx);
+                        }
+                    }
+                }),
+            );
+    }
+    seek_track
+}
+fn format_playback_ms(ms: u64) -> String {
+    let total_secs = ms / 1000;
+    let mins = total_secs / 60;
+    let secs = total_secs % 60;
+    format!("{mins:02}:{secs:02}")
 }

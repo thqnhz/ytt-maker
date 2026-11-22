@@ -191,6 +191,16 @@ impl Player {
             .map(|s| (s.max(0.0) * 1000.0) as u64)
     }
 
+    pub fn seek_ms(&self, position_ms: u64) -> Result<()> {
+        let seconds = position_ms as f64 / 1000.0;
+        self.inner
+            .mpv
+            .command("seek", &[&seconds.to_string(), "absolute+exact"])
+            .context("failed to seek video")?;
+        self.inner.update_flag.store(true, Ordering::Release);
+        Ok(())
+    }
+
     pub fn latest_frame(&self) -> Option<VideoFrame> {
         if !self.inner.update_flag.swap(false, Ordering::AcqRel) {
             return None;
