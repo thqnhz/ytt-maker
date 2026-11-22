@@ -77,7 +77,11 @@ impl YttmApp {
         self.input.sync_selected(values, window, cx);
     }
 
-    pub(crate) fn commit_selected_cue_inputs(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn commit_selected_cue_inputs(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         let Some(id) = self.selected_cue else {
             self.sync_selected_cue_inputs(window, cx);
             return;
@@ -219,10 +223,7 @@ impl YttmApp {
         if let Some(frame) = player.pull_frame()
             && let Some(img) = RgbaImage::from_raw(frame.width, frame.height, frame.bgra)
         {
-            let render = Arc::new(RenderImage::new(SmallVec::from_elem(
-                Frame::new(img),
-                1,
-            )));
+            let render = Arc::new(RenderImage::new(SmallVec::from_elem(Frame::new(img), 1)));
             if let Some(old_frame) = self.video_frame.replace(render) {
                 cx.drop_image(old_frame, None);
             }
