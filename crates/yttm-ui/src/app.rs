@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use gpui_kit::base::ResizableState;
+use gpui_kit::component::select::{SearchableVec, SelectEvent, SelectState};
 use gpui_kit::component::*;
 use gpui_kit::*;
 use image::{Frame, RgbaImage};
@@ -13,7 +14,7 @@ use crate::view::{Redo, Undo};
 use crate::workspace::{Workspace, WorkspaceLayout, WorkspaceSplit};
 use yttm_core::{Cue, Document};
 use yttm_input::YttmInput;
-use yttm_playback::{Player, VideoState};
+use yttm_playback::{Player, PreviewQuality, VideoState};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct EditorSnapshot {
@@ -29,6 +30,7 @@ pub(crate) struct YttmApp {
     pub(crate) video: VideoState,
     pub(crate) player: Option<Player>,
     pub(crate) video_frame: Option<Arc<RenderImage>>,
+    pub(crate) preview_quality_select: Entity<SelectState<SearchableVec<&'static str>>>,
     next_cue_id: u64,
     pub(crate) selected_cue: Option<u64>,
     pub(crate) cue_list_scroll: ScrollHandle,
@@ -39,6 +41,27 @@ pub(crate) struct YttmApp {
 
 impl YttmApp {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
+        let quality_items = SearchableVec::new(
+            PreviewQuality::ALL
+                .iter()
+                .map(|q| q.label())
+                .collect::<Vec<_>>(),
+        );
+        let preview_quality_select =
+            cx.new(|cx| SelectState::new(quality_items, Some(IndexPath::new(2)), window, cx));
+        cx.subscribe(&preview_quality_select, |this, _, event, cx| {
+            let SelectEvent::Confirm(value) = event;
+            let quality = match value.as_deref() {
+                Some("Full") => PreviewQuality::Full,
+                Some("1/2") => PreviewQuality::Half,
+                Some("1/4") => PreviewQuality::Quarter,
+                Some("1/8") => PreviewQuality::Eighth,
+                _ => return,
+            };
+            this.set_preview_quality(quality, cx);
+        })
+        .detach();
+
         Self {
             document: Document { cues: Vec::new() },
             next_cue_id: 1,
@@ -52,14 +75,26 @@ impl YttmApp {
             },
             theme: YttmTheme::new(),
             input: YttmInput::new(window, cx),
-            video: VideoState::new(),
+            video: VideoState::default(),
             player: Player::new().ok(),
             video_frame: None,
+            preview_quality_select,
             cue_list_scroll: ScrollHandle::new(),
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             video_poll_generation: 0,
         }
+    }
+
+    pub(crate) fn set_preview_quality(&mut self, quality: PreviewQuality, cx: &mut Context<Self>) {
+        if self.video.preview_quality == quality {
+            return;
+        }
+        self.video.preview_quality = quality;
+        if let Some(player) = &self.player {
+            let _ = player.set_preview_quality(quality);
+        }
+        cx.notify();
     }
 
     pub(crate) fn sync_selected_cue_inputs(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -220,7 +255,8 @@ impl YttmApp {
             self.video.duration_ms = Some(duration_ms);
             changed = true;
         }
-        if let Some(frame) = player.pull_frame()
+        if player.has_frame_update()
+            && let Some(frame) = player.latest_frame()
             && let Some(img) = RgbaImage::from_raw(frame.width, frame.height, frame.bgra)
         {
             let render = Arc::new(RenderImage::new(SmallVec::from_elem(Frame::new(img), 1)));

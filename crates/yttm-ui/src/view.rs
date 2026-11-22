@@ -8,6 +8,7 @@ use crate::app::YttmApp;
 use crate::button::{open_button, save_button, toggle_layout_button, toggle_theme_button};
 use crate::cue_editor;
 use crate::workspace::*;
+use gpui_kit::component::select::Select;
 
 gpui_kit::actions!(yttm, [Undo, Redo]);
 
@@ -180,20 +181,28 @@ impl YttmApp {
             .text_color(gpui::white());
         if self.video.path.is_some() {
             let play_label = if self.video.playing { "Pause" } else { "Play" };
-            controls = controls.child(
-                div()
-                    .id("video-play-toggle")
-                    .cursor_pointer()
-                    .px_2()
-                    .py_1()
-                    .rounded(cx.theme().radius)
-                    .bg(gpui::rgba(0xffffff22))
-                    .hover(|s| s.bg(gpui::rgba(0xffffff33)))
-                    .child(play_label)
-                    .on_click(cx.listener(|this, _, _, cx| {
-                        this.toggle_video_playback(cx);
-                    })),
-            );
+            controls = controls
+                .child(
+                    div()
+                        .id("video-play-toggle")
+                        .cursor_pointer()
+                        .px_2()
+                        .py_1()
+                        .rounded(cx.theme().radius)
+                        .bg(gpui::rgba(0xffffff22))
+                        .hover(|s| s.bg(gpui::rgba(0xffffff33)))
+                        .child(play_label)
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.toggle_video_playback(cx);
+                        })),
+                )
+                .child(
+                    div().w(px(64.)).child(
+                        Select::new(&self.preview_quality_select)
+                            .id("video-preview-quality")
+                            .menu_width(px(64.)),
+                    ),
+                );
         }
 
         let video_content = if let Some(frame) = &self.video_frame {

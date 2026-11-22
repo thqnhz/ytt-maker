@@ -18,9 +18,8 @@ readme = "README.md"
 [workspace.dependencies]
 gpui-kit = "0.9.1"
 anyhow = "1"
-gstreamer = "0.25"
-gstreamer-app = "0.25"
-gstreamer-video = "0.25"
+libmpv2 = "7.0.1"
+libmpv2-sys = "4.0.1"
 image = { version = "0.25", default-features = false }
 smallvec = "1"
 

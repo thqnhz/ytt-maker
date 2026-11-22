@@ -8,6 +8,5 @@ readme.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-gstreamer.workspace = true
-gstreamer-app.workspace = true
-gstreamer-video.workspace = true
+libmpv2.workspace = true
+libmpv2-sys.workspace = true

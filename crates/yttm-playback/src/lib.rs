@@ -1,10 +1,41 @@
+use std::ffi::{CString, c_void};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
-use anyhow::{Context as _, Result};
-use gstreamer as gst;
-use gstreamer::prelude::*;
-use gstreamer_app as gst_app;
-use gstreamer_video as gst_video;
+use anyhow::{Context as _, Result, anyhow};
+use libmpv2::Mpv;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum PreviewQuality {
+    Full,
+    Half,
+    #[default]
+    Quarter,
+    Eighth,
+}
+
+impl PreviewQuality {
+    pub const ALL: [Self; 4] = [Self::Full, Self::Half, Self::Quarter, Self::Eighth];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Full => "Full",
+            Self::Half => "1/2",
+            Self::Quarter => "1/4",
+            Self::Eighth => "1/8",
+        }
+    }
+
+    pub fn divisor(self) -> u32 {
+        match self {
+            Self::Full => 1,
+            Self::Half => 2,
+            Self::Quarter => 4,
+            Self::Eighth => 8,
+        }
+    }
+}
 
 #[derive(Clone, Debug, Default)]
 pub struct VideoState {
@@ -12,6 +43,7 @@ pub struct VideoState {
     pub position_ms: u64,
     pub duration_ms: Option<u64>,
     pub playing: bool,
+    pub preview_quality: PreviewQuality,
 }
 
 impl VideoState {
@@ -20,10 +52,10 @@ impl VideoState {
     }
 
     pub fn open(&mut self, path: PathBuf) {
+        let quality = self.preview_quality;
+        *self = Self::default();
+        self.preview_quality = quality;
         self.path = Some(path);
-        self.position_ms = 0;
-        self.duration_ms = None;
-        self.playing = false;
     }
 
     pub fn close(&mut self) {
@@ -45,104 +77,244 @@ pub struct VideoFrame {
     pub bgra: Vec<u8>,
 }
 
+struct Inner {
+    mpv: Mpv,
+    render: *mut libmpv2_sys::mpv_render_context,
+    source_dims: Mutex<Option<(u32, u32)>>,
+    quality: Mutex<PreviewQuality>,
+    update_flag: Arc<AtomicBool>,
+    cb_ctx: *const AtomicBool,
+}
+
+unsafe impl Send for Inner {}
+unsafe impl Sync for Inner {}
+
+impl Drop for Inner {
+    fn drop(&mut self) {
+        unsafe {
+            if !self.render.is_null() {
+                libmpv2_sys::mpv_render_context_free(self.render);
+                self.render = std::ptr::null_mut();
+            }
+            if !self.cb_ctx.is_null() {
+                drop(Arc::from_raw(self.cb_ctx));
+                self.cb_ctx = std::ptr::null();
+            }
+        }
+        let _ = self.mpv.command("stop", &[]);
+    }
+}
+
 pub struct Player {
-    playbin: gst::Element,
-    appsink: gst_app::AppSink,
+    inner: Arc<Inner>,
 }
 
 impl Player {
     pub fn new() -> Result<Self> {
-        gst::init().context("failed to initialize GStreamer")?;
+        let mpv = Mpv::with_initializer(|init| {
+            init.set_property("vo", "libmpv")?;
+            init.set_property("hwdec", "auto-safe")?;
+            init.set_property("keep-open", "yes")?;
+            init.set_property("idle", "yes")?;
+            Ok(())
+        })
+        .context("failed to initialize mpv")?;
 
-        let playbin = gst::ElementFactory::make("playbin")
-            .build()
-            .context("failed to create playbin element")?;
+        let update_flag = Arc::new(AtomicBool::new(true));
+        let flag_cb = Arc::clone(&update_flag);
+        let (render, cb_ctx) = unsafe { create_sw_render_context(mpv.ctx.as_ptr(), flag_cb)? };
 
-        let appsink = gst_app::AppSink::builder()
-            .caps(
-                &gst_video::VideoCapsBuilder::new()
-                    .format(gst_video::VideoFormat::Bgra)
-                    .build(),
-            )
-            .build();
+        let inner = Arc::new(Inner {
+            mpv,
+            render,
+            source_dims: Mutex::new(None),
+            quality: Mutex::new(PreviewQuality::default()),
+            update_flag,
+            cb_ctx,
+        });
 
-        playbin.set_property("video-sink", &appsink);
-
-        Ok(Self { playbin, appsink })
+        Ok(Self { inner })
     }
 
     pub fn open(&self, path: &Path) -> Result<()> {
-        let uri = gst::glib::filename_to_uri(path, None).context("failed to build file URI")?;
-        self.playbin
-            .set_state(gst::State::Null)
-            .context("failed to reset playbin state")?;
-        self.playbin.set_property("uri", uri.as_str());
-        self.playbin
-            .set_state(gst::State::Paused)
-            .context("failed to pause playbin for preroll")?;
+        let path = path
+            .to_str()
+            .ok_or_else(|| anyhow!("video path is not valid utf-8"))?;
+        self.inner
+            .mpv
+            .command("loadfile", &[path, "replace"])
+            .context("failed to load video")?;
+        self.inner
+            .mpv
+            .set_property("pause", true)
+            .context("failed to pause after load")?;
+        *self.inner.source_dims.lock().expect("source_dims poisoned") = None;
+        self.inner.update_flag.store(true, Ordering::Release);
+        Ok(())
+    }
+
+    pub fn set_preview_quality(&self, quality: PreviewQuality) -> Result<()> {
+        *self.inner.quality.lock().expect("quality poisoned") = quality;
+        self.inner.update_flag.store(true, Ordering::Release);
         Ok(())
     }
 
     pub fn play(&self) -> Result<()> {
-        self.playbin
-            .set_state(gst::State::Playing)
+        self.inner
+            .mpv
+            .set_property("pause", false)
             .context("failed to start playback")?;
         Ok(())
     }
 
     pub fn pause(&self) -> Result<()> {
-        self.playbin
-            .set_state(gst::State::Paused)
+        self.inner
+            .mpv
+            .set_property("pause", true)
             .context("failed to pause playback")?;
         Ok(())
     }
 
     pub fn position_ms(&self) -> Option<u64> {
-        self.playbin
-            .query_position::<gst::ClockTime>()
-            .map(|p| p.mseconds())
+        self.inner
+            .mpv
+            .get_property::<f64>("time-pos")
+            .ok()
+            .map(|s| (s.max(0.0) * 1000.0) as u64)
     }
 
     pub fn duration_ms(&self) -> Option<u64> {
-        self.playbin
-            .query_duration::<gst::ClockTime>()
-            .map(|d| d.mseconds())
+        self.inner
+            .mpv
+            .get_property::<f64>("duration")
+            .ok()
+            .map(|s| (s.max(0.0) * 1000.0) as u64)
     }
 
-    pub fn pull_frame(&self) -> Option<VideoFrame> {
-        let sample = self.appsink.try_pull_sample(gst::ClockTime::ZERO)?;
-        let caps = sample.caps()?;
-        let info = gst_video::VideoInfo::from_caps(caps).ok()?;
-        let buffer = sample.buffer()?;
-        let map = buffer.map_readable().ok()?;
+    pub fn latest_frame(&self) -> Option<VideoFrame> {
+        if !self.inner.update_flag.swap(false, Ordering::AcqRel) {
+            return None;
+        }
+        let flags = unsafe { libmpv2_sys::mpv_render_context_update(self.inner.render) };
+        if (flags & libmpv2_sys::mpv_render_update_flag_MPV_RENDER_UPDATE_FRAME as u64) == 0 {
+            return None;
+        }
+        let (sw, sh) = self.source_dims()?;
+        let quality = *self.inner.quality.lock().expect("quality poisoned");
+        let (w, h) = scaled_dims(sw, sh, quality);
+        let stride = (w as usize) * 4;
+        let mut bgra = vec![0u8; stride * (h as usize)];
 
-        let width = info.width() as usize;
-        let height = info.height() as usize;
-        let stride = info.stride()[0] as usize;
-        let row_bytes = width * 4;
-        let src = map.as_slice();
+        let mut size: [i32; 2] = [w as i32, h as i32];
+        let format_c = CString::new("bgra").ok()?;
+        let mut stride_val: usize = stride;
 
-        let mut bgra = vec![0u8; row_bytes * height];
-        for y in 0..height {
-            let src_off = y * stride;
-            let dst_off = y * row_bytes;
-            let src_end = src_off + row_bytes;
-            if src_end > src.len() {
-                return None;
-            }
-            bgra[dst_off..dst_off + row_bytes].copy_from_slice(&src[src_off..src_end]);
+        let params = [
+            libmpv2_sys::mpv_render_param {
+                type_: libmpv2_sys::mpv_render_param_type_MPV_RENDER_PARAM_SW_SIZE,
+                data: size.as_mut_ptr() as *mut c_void,
+            },
+            libmpv2_sys::mpv_render_param {
+                type_: libmpv2_sys::mpv_render_param_type_MPV_RENDER_PARAM_SW_FORMAT,
+                data: format_c.as_ptr() as *mut c_void,
+            },
+            libmpv2_sys::mpv_render_param {
+                type_: libmpv2_sys::mpv_render_param_type_MPV_RENDER_PARAM_SW_STRIDE,
+                data: &mut stride_val as *mut usize as *mut c_void,
+            },
+            libmpv2_sys::mpv_render_param {
+                type_: libmpv2_sys::mpv_render_param_type_MPV_RENDER_PARAM_SW_POINTER,
+                data: bgra.as_mut_ptr() as *mut c_void,
+            },
+            libmpv2_sys::mpv_render_param {
+                type_: libmpv2_sys::mpv_render_param_type_MPV_RENDER_PARAM_INVALID,
+                data: std::ptr::null_mut(),
+            },
+        ];
+
+        let ret = unsafe {
+            libmpv2_sys::mpv_render_context_render(self.inner.render, params.as_ptr() as *mut _)
+        };
+        if ret < 0 {
+            self.inner.update_flag.store(true, Ordering::Release);
+            return None;
         }
 
         Some(VideoFrame {
-            width: info.width(),
-            height: info.height(),
+            width: w,
+            height: h,
             bgra,
         })
     }
+
+    pub fn request_render(&self) {
+        self.inner.update_flag.store(true, Ordering::Release);
+    }
+
+    pub fn has_frame_update(&self) -> bool {
+        self.inner.update_flag.load(Ordering::Acquire)
+    }
+
+    fn source_dims(&self) -> Option<(u32, u32)> {
+        if let Some(dims) = *self.inner.source_dims.lock().expect("source_dims poisoned") {
+            return Some(dims);
+        }
+        let w = self.inner.mpv.get_property::<i64>("width").ok()?;
+        let h = self.inner.mpv.get_property::<i64>("height").ok()?;
+        if w <= 0 || h <= 0 {
+            return None;
+        }
+        let dims = (w as u32, h as u32);
+        *self.inner.source_dims.lock().expect("source_dims poisoned") = Some(dims);
+        Some(dims)
+    }
 }
 
-impl Drop for Player {
-    fn drop(&mut self) {
-        let _ = self.playbin.set_state(gst::State::Null);
+fn scaled_dims(width: u32, height: u32, quality: PreviewQuality) -> (u32, u32) {
+    let divisor = quality.divisor().max(1);
+    let w = (width / divisor).max(1);
+    let h = (height / divisor).max(1);
+    (w, h)
+}
+
+unsafe extern "C" fn update_cb(ctx: *mut c_void) {
+    if ctx.is_null() {
+        return;
     }
+    let flag = unsafe { &*(ctx as *const AtomicBool) };
+    flag.store(true, Ordering::Release);
+}
+
+unsafe fn create_sw_render_context(
+    mpv: *mut libmpv2_sys::mpv_handle,
+    flag: Arc<AtomicBool>,
+) -> Result<(*mut libmpv2_sys::mpv_render_context, *const AtomicBool)> {
+    let api_type = CString::new("sw").unwrap();
+    let params = [
+        libmpv2_sys::mpv_render_param {
+            type_: libmpv2_sys::mpv_render_param_type_MPV_RENDER_PARAM_API_TYPE,
+            data: api_type.as_ptr() as *mut c_void,
+        },
+        libmpv2_sys::mpv_render_param {
+            type_: libmpv2_sys::mpv_render_param_type_MPV_RENDER_PARAM_INVALID,
+            data: std::ptr::null_mut(),
+        },
+    ];
+
+    let mut ctx: *mut libmpv2_sys::mpv_render_context = std::ptr::null_mut();
+    let err =
+        unsafe { libmpv2_sys::mpv_render_context_create(&mut ctx, mpv, params.as_ptr() as *mut _) };
+    if err < 0 {
+        return Err(anyhow!("mpv_render_context_create failed: {err}"));
+    }
+
+    let cb_ctx = Arc::into_raw(flag);
+    unsafe {
+        libmpv2_sys::mpv_render_context_set_update_callback(
+            ctx,
+            Some(update_cb),
+            cb_ctx as *mut c_void,
+        );
+    }
+    Ok((ctx, cb_ctx))
 }
